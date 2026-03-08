@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pms_postgres
+    environment:
+      POSTGRES_DB: pms_db
+      POSTGRES_USER: pms_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-supersecretpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pms_user -d pms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pms_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pms_backend
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://pms_user:${DB_PASSWORD:-supersecretpassword}@postgres:5432/pms_db
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      JWT_EXPIRES_IN: 7d
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - pms_network
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pms_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+    networks:
+      - pms_network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+
+networks:
+  pms_network:
+    driver: bridge

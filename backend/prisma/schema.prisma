@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+}
+
+enum ApartmentStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  INACTIVE
+}
+
+enum LeaseStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  PENDING
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentType {
+  RENT
+  DEPOSIT
+  LATE_FEE
+  OTHER
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ExpenseCategory {
+  REPAIRS
+  UTILITIES
+  CLEANING
+  INSURANCE
+  TAXES
+  STAFF
+  OTHER
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        Role     @default(MANAGER)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  complexes   ApartmentComplex[]
+  tenants     Tenant[]
+}
+
+model ApartmentComplex {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  zipCode     String?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+
+  apartments  Apartment[]
+  expenses    Expense[]
+}
+
+model Apartment {
+  id           String          @id @default(cuid())
+  number       String
+  floor        Int?
+  bedrooms     Int             @default(1)
+  bathrooms    Int             @default(1)
+  area         Float?
+  monthlyRent  Decimal         @db.Decimal(10, 2)
+  status       ApartmentStatus @default(AVAILABLE)
+  description  String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  complexId    String
+  complex      ApartmentComplex @relation(fields: [complexId], references: [id])
+
+  leases       Lease[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@unique([complexId, number])
+}
+
+model Tenant {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phone       String?
+  dni         String?
+  birthDate   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  leases      Lease[]
+  payments    Payment[]
+  maintenanceRequests MaintenanceRequest[]
+}
+
+model Lease {
+  id            String      @id @default(cuid())
+  startDate     DateTime
+  endDate       DateTime
+  monthlyRent   Decimal     @db.Decimal(10, 2)
+  depositAmount Decimal     @db.Decimal(10, 2)
+  status        LeaseStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  apartmentId   String
+  apartment     Apartment   @relation(fields: [apartmentId], references: [id])
+
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+
+  payments      Payment[]
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  amount      Decimal       @db.Decimal(10, 2)
+  dueDate     DateTime
+  paidDate    DateTime?
+  status      PaymentStatus @default(PENDING)
+  type        PaymentType   @default(RENT)
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  leaseId     String
+  lease       Lease         @relation(fields: [leaseId], references: [id])
+
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  description String
+  amount      Decimal         @db.Decimal(10, 2)
+  date        DateTime
+  category    ExpenseCategory @default(OTHER)
+  receipt     String?
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  complexId   String
+  complex     ApartmentComplex @relation(fields: [complexId], references: [id])
+}
+
+model MaintenanceRequest {
+  id           String              @id @default(cuid())
+  title        String
+  description  String
+  status       MaintenanceStatus   @default(OPEN)
+  priority     MaintenancePriority @default(MEDIUM)
+  resolvedAt   DateTime?
+  notes        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  apartmentId  String
+  apartment    Apartment           @relation(fields: [apartmentId], references: [id])
+
+  tenantId     String?
+  tenant       Tenant?             @relation(fields: [tenantId], references: [id])
+}
