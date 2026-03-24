@@ -40,12 +40,23 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-700">
-        <div className="text-xs text-gray-400 mb-3">
-          <p className="font-medium text-gray-200">{user?.firstName} {user?.lastName}</p>
-          <p>{user?.email}</p>
-          <p className="mt-1 inline-block bg-blue-600 text-white px-2 py-0.5 rounded text-xs">{user?.role}</p>
-        </div>
+      <div className="p-4 border-t border-gray-700 space-y-3">
+        {user ? (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {user.firstName?.[0]}{user.lastName?.[0]}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white truncate">{user.firstName} {user.lastName}</p>
+              <p className="text-xs text-gray-400 truncate">{user.email}</p>
+            </div>
+            <span className="ml-auto shrink-0 text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded font-medium">
+              {user.role}
+            </span>
+          </div>
+        ) : (
+          <div className="h-8 bg-gray-800 rounded animate-pulse" />
+        )}
         <button
           onClick={logout}
           className="w-full text-left text-sm text-gray-400 hover:text-white transition-colors"
