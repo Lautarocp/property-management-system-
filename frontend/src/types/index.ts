@@ -47,6 +47,7 @@ export interface Tenant {
   phone?: string
   dni?: string
   birthDate?: string
+  notes?: string
   isActive: boolean
   createdById: string
   createdAt: string

@@ -1,234 +1,337 @@
 # Property Management System (PMS)
 
-A modern full-stack web application for managing multiple apartment complexes, built with NestJS, React, PostgreSQL, and Prisma.
+A full-stack web application for managing multiple apartment complexes — including tenants, leases, payments, expenses, and maintenance requests. Built with NestJS, React, PostgreSQL, and Prisma.
+
+---
 
 ## Tech Stack
 
 ### Backend
-- **Runtime**: Node.js 20+
-- **Framework**: NestJS with TypeScript
-- **Database**: PostgreSQL 15
-- **ORM**: Prisma
-- **Authentication**: JWT + Passport
-- **Validation**: class-validator & class-transformer
+| Technology | Purpose |
+|---|---|
+| Node.js 20+ / NestJS | REST API framework |
+| PostgreSQL 15 | Primary database |
+| Prisma ORM | Database access & migrations |
+| JWT + Passport | Authentication |
+| class-validator | Request validation |
+| Swagger / OpenAPI | Auto-generated API docs |
 
 ### Frontend
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: TailwindCSS
-- **State Management**: Zustand
-- **Data Fetching**: Axios + React Query
-- **Forms**: React Hook Form + Zod
+| Technology | Purpose |
+|---|---|
+| React 18 + TypeScript | UI framework |
+| Vite | Build tool & dev server |
+| TailwindCSS | Styling |
+| Zustand | Auth state management |
+| TanStack React Query | Server state & data fetching |
+| React Hook Form | Form handling |
+| Axios | HTTP client |
 
 ### Infrastructure
-- **Containerization**: Docker & Docker Compose
-- **Development**: Hot reload for both frontend and backend
+| Technology | Purpose |
+|---|---|
+| Docker + Docker Compose | Containerized development |
+| NestJS hot reload | Backend live updates |
+| Vite HMR | Frontend live updates |
+
+---
 
 ## Project Structure
 
 ```
-pms-app/
-├── backend/                 # NestJS application
-│   ├── prisma/             # Database schema & migrations
+property-management-system/
+├── backend/
+│   ├── prisma/
+│   │   └── schema.prisma         # Database schema (8 models, 8 enums)
 │   ├── src/
-│   │   ├── auth/           # Authentication module
-│   │   ├── users/          # Users management
-│   │   ├── complexes/      # Apartment complexes
-│   │   ├── apartments/     # Apartments
-│   │   ├── tenants/        # Tenant management
-│   │   ├── leases/         # Lease management
-│   │   ├── payments/       # Payment tracking
-│   │   ├── expenses/       # Expense tracking
-│   │   ├── maintenance/    # Maintenance requests
-│   │   ├── dashboard/      # Dashboard stats
-│   │   └── common/         # Guards, decorators, filters
+│   │   ├── auth/                 # JWT authentication (register, login)
+│   │   ├── users/                # User management
+│   │   ├── complexes/            # Apartment complex CRUD
+│   │   ├── apartments/           # Apartment CRUD
+│   │   ├── tenants/              # Tenant CRUD + notes
+│   │   ├── leases/               # Lease management (assign, transfer, terminate)
+│   │   ├── payments/             # Payment tracking (stub)
+│   │   ├── expenses/             # Expense tracking (stub)
+│   │   ├── maintenance/          # Maintenance requests (stub)
+│   │   ├── dashboard/            # Aggregated stats
+│   │   ├── prisma/               # PrismaService
+│   │   └── common/               # Guards, decorators, filters, interceptors
 │   └── Dockerfile
 │
-├── frontend/                # React application
+├── frontend/
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Page components
-│   │   ├── api/            # API client
-│   │   ├── store/          # Zustand stores
-│   │   ├── hooks/          # Custom hooks
-│   │   └── types/          # TypeScript types
+│   │   ├── api/                  # Axios API clients per module
+│   │   ├── components/
+│   │   │   ├── layout/           # Layout + Sidebar navigation
+│   │   │   └── shared/           # ProtectedRoute
+│   │   ├── hooks/                # React Query mutation/query hooks
+│   │   ├── pages/
+│   │   │   ├── auth/             # Login, Register
+│   │   │   ├── complexes/        # ComplexesPage
+│   │   │   ├── apartments/       # ApartmentsPage
+│   │   │   ├── tenants/          # TenantsPage
+│   │   │   └── DashboardPage.tsx
+│   │   ├── store/                # Zustand auth store
+│   │   └── types/                # TypeScript interfaces
 │   └── Dockerfile
 │
-├── docker-compose.yml       # Development environment
-└── .env.example             # Environment template
+├── docker-compose.yml
+├── .env.example
+└── README.md
 ```
+
+---
 
 ## Getting Started
 
 ### Prerequisites
-- Docker & Docker Compose (recommended for development)
-- Node.js 20+ (if running without Docker)
-- PostgreSQL 15+ (if running without Docker)
+- Docker & Docker Compose
+- Git
 
-### Option 1: Using Docker Compose (Recommended)
+### 1. Clone & configure
 
 ```bash
-cd pms-app
+git clone https://github.com/Lautarocp/property-management-system-.git
+cd property-management-system-
 
-# Copy environment variables
 cp .env.example .env
-
-# Start all services
-docker-compose up
-
-# In another terminal, run migrations
-docker-compose exec backend npx prisma migrate dev --name init
 ```
 
-The application will be available at:
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000
-- API Docs: http://localhost:3000/api/docs
-- Database: localhost:5432
+> **Important:** If deploying on a remote server, update `VITE_API_URL` and `CORS_ORIGIN` in `docker-compose.yml` to use the server's IP instead of `localhost`.
 
-### Option 2: Local Development Setup
+### 2. Start all services
 
-#### Backend Setup
 ```bash
-cd backend
-
-# Install dependencies
-npm install
-
-# Setup environment
-cp ../.env.example .env
-
-# Generate Prisma client
-npx prisma generate
-
-# Run migrations
-npx prisma migrate dev --name init
-
-# Start development server
-npm run start:dev
+docker compose up -d --build
 ```
 
-#### Frontend Setup
+### 3. Run database migrations
+
 ```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
+docker compose exec backend npx prisma migrate dev --name init
 ```
 
-## Available Scripts
+### 4. Access the app
 
-### Backend
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3000/api |
+| API Docs (Swagger) | http://localhost:3000/api/docs |
+| PostgreSQL | localhost:5432 |
+
+### 5. Create your first user
+
 ```bash
-npm run start:dev    # Development with hot reload
-npm run build        # Build for production
-npm run start:prod   # Run production build
-npm run test         # Run tests
-npm test:e2e         # Run E2E tests
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@pms.com","password":"Admin123!","firstName":"Admin","lastName":"User","role":"ADMIN"}'
 ```
 
-### Frontend
-```bash
-npm run dev          # Development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run type-check   # Type check only
-```
+---
 
-## Development Roadmap
+## Remote Server Deployment
 
-### Phase 1: Foundation ✅
-- [x] Project structure setup
-- [x] NestJS configuration
-- [x] Prisma schema & models
-- [x] Docker Compose setup
+To deploy on a machine in your local network (e.g. a Debian server at `192.168.x.x`):
 
-### Phase 2: Authentication (Next)
-- [ ] User registration & login
-- [ ] JWT tokens & refresh
-- [ ] Role-based access control
-- [ ] Frontend auth pages
+1. Install Docker on the server (the setup script handles this automatically on Debian).
+2. In `docker-compose.yml`, replace both `localhost` references with the server IP:
+   ```yaml
+   # backend service
+   CORS_ORIGIN: http://<SERVER_IP>:5173
 
-### Phase 3: Core CRUD (TBD)
-- [ ] Apartment complexes management
-- [ ] Apartments listing
-- [ ] Tenants management
-- [ ] Dashboard skeleton
+   # frontend service
+   VITE_API_URL: http://<SERVER_IP>:3000/api
+   ```
+3. Copy the project and run `docker compose up -d --build`.
+4. Run migrations: `docker compose exec -T backend npx prisma db push`
 
-### Phase 4: Leases & Payments (TBD)
-- [ ] Lease creation & management
-- [ ] Payment tracking
-- [ ] Overdue detection
+---
 
-### Phase 5: Maintenance & Expenses (TBD)
-- [ ] Maintenance requests
-- [ ] Expense tracking
-- [ ] Category management
+## Features
 
-### Phase 6: Dashboard & Reporting (TBD)
-- [ ] Dashboard statistics
-- [ ] Charts & analytics
-- [ ] Reports generation
+### Phase 1 — Foundation ✅
+- Project structure, NestJS configuration, Prisma schema, Docker Compose setup.
 
-### Phase 7: Production Ready (TBD)
-- [ ] API documentation
-- [ ] Unit & E2E tests
-- [ ] Performance optimization
-- [ ] Security hardening
+### Phase 2 — Authentication ✅
+- User registration with bcrypt password hashing.
+- JWT login with 7-day tokens.
+- Role-based access control (`ADMIN`, `MANAGER`).
+- Protected routes on the frontend.
+- Login and Register pages.
+
+### Phase 3 — Core CRUD ✅
+
+#### Apartment Complexes
+- Create, edit, soft-delete complexes.
+- Each complex shows apartment count.
+- Fields: name, address, city, state, zip code, description.
+
+#### Apartments
+- Create, edit, delete apartments with unit number, floor, bedrooms, bathrooms, area, monthly rent.
+- Status: `AVAILABLE`, `OCCUPIED`, `MAINTENANCE`, `INACTIVE`.
+- Filter apartments by complex.
+- Apartment table shows current tenant name.
+
+#### Tenants
+- Create, edit, soft-delete tenants.
+- Fields: name, email, phone, DNI/ID, birth date, **notes**.
+- **Notes** are displayed inline in the table (📝 preview) and in the detail panel.
+- **View** button opens a detail panel showing:
+  - Personal information
+  - Notes (highlighted)
+  - Current apartment & active lease details (rent, start/end dates)
+  - Full lease history with status badges
+
+#### Dashboard
+- Live stats cards: total complexes, total apartments, available vs occupied, total tenants, active leases, pending payments.
+
+### Phase 3.5 — Tenant ↔ Apartment Assignment ✅
+
+#### Assign Tenant to Apartment
+- **Assign** button on available apartments.
+- Select tenant, set lease dates, monthly rent, deposit, and optional notes.
+- Apartment status automatically changes to `OCCUPIED`.
+
+#### Move Tenant to Different Apartment
+- **Move** button on occupied apartments.
+- Dropdown shows only `AVAILABLE` apartments.
+- On confirm:
+  - Old lease is terminated → old apartment becomes `AVAILABLE`.
+  - New lease is created → new apartment becomes `OCCUPIED`.
+  - Entire operation runs in a single database transaction.
+
+#### Remove Tenant from Apartment
+- **Remove** button terminates the active lease and marks the apartment `AVAILABLE`.
+
+---
+
+## API Reference
+
+All endpoints (except `/api/auth/*`) require a `Bearer` token in the `Authorization` header.
+
+### Auth
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login, returns JWT |
+| GET | `/api/auth/me` | Get current user |
+
+### Complexes
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/complexes` | List all active complexes |
+| GET | `/api/complexes/:id` | Get complex with apartments |
+| POST | `/api/complexes` | Create complex |
+| PATCH | `/api/complexes/:id` | Update complex |
+| DELETE | `/api/complexes/:id` | Soft delete complex |
+
+### Apartments
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/apartments` | List apartments (optional `?complexId=`) |
+| GET | `/api/apartments/:id` | Get apartment with active lease |
+| POST | `/api/apartments` | Create apartment |
+| PATCH | `/api/apartments/:id` | Update apartment |
+| DELETE | `/api/apartments/:id` | Delete apartment |
+
+### Tenants
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/tenants` | List active tenants (includes active lease) |
+| GET | `/api/tenants/:id` | Get tenant with full lease history |
+| POST | `/api/tenants` | Create tenant |
+| PATCH | `/api/tenants/:id` | Update tenant (including notes) |
+| DELETE | `/api/tenants/:id` | Soft delete tenant |
+
+### Leases
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/leases` | List leases (optional `?apartmentId=`) |
+| GET | `/api/leases/:id` | Get lease |
+| POST | `/api/leases` | Create lease (assigns tenant to apartment) |
+| PATCH | `/api/leases/:id/terminate` | Terminate lease, frees apartment |
+| PATCH | `/api/leases/:id/transfer` | Move tenant to a different apartment |
+
+### Dashboard
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/dashboard/stats` | Returns aggregated property stats |
+
+Full interactive docs available at `/api/docs` (Swagger UI).
+
+---
 
 ## Database Schema
 
-The database includes the following main entities:
+```
+User ──< ApartmentComplex ──< Apartment ──< Lease >── Tenant
+                                    └──< MaintenanceRequest >── Tenant
+                          └──< Expense
+         Lease ──< Payment >── Tenant
+```
 
-- **Users**: System users with roles (ADMIN, MANAGER)
-- **ApartmentComplex**: Properties managed in the system
-- **Apartments**: Individual units within complexes
-- **Tenants**: People renting apartments
-- **Leases**: Rental contracts
-- **Payments**: Rent and fee payments
-- **Expenses**: Complex-related expenses
-- **MaintenanceRequests**: Repair and maintenance tickets
+### Models
+| Model | Key Fields |
+|---|---|
+| `User` | email, password (hashed), firstName, lastName, role (ADMIN/MANAGER) |
+| `ApartmentComplex` | name, address, city, state, zipCode, description, isActive |
+| `Apartment` | number, floor, bedrooms, bathrooms, area, monthlyRent, status |
+| `Tenant` | firstName, lastName, email, phone, dni, birthDate, **notes**, isActive |
+| `Lease` | startDate, endDate, monthlyRent, depositAmount, status, notes |
+| `Payment` | amount, dueDate, paidDate, status, type |
+| `Expense` | description, amount, date, category |
+| `MaintenanceRequest` | title, description, status, priority |
 
-For full schema details, see `backend/prisma/schema.prisma`
+### Enums
+- `ApartmentStatus`: `AVAILABLE` · `OCCUPIED` · `MAINTENANCE` · `INACTIVE`
+- `LeaseStatus`: `ACTIVE` · `EXPIRED` · `TERMINATED` · `PENDING`
+- `PaymentStatus`: `PENDING` · `PAID` · `OVERDUE` · `CANCELLED`
+- `PaymentType`: `RENT` · `DEPOSIT` · `LATE_FEE` · `OTHER`
+- `MaintenanceStatus`: `OPEN` · `IN_PROGRESS` · `RESOLVED` · `CLOSED`
+- `MaintenancePriority`: `LOW` · `MEDIUM` · `HIGH` · `URGENT`
+- `ExpenseCategory`: `REPAIRS` · `UTILITIES` · `CLEANING` · `INSURANCE` · `TAXES` · `STAFF` · `OTHER`
 
-## API Documentation
-
-Once the backend is running, visit: http://localhost:3000/api/docs
+---
 
 ## Environment Variables
 
-See `.env.example` for all required environment variables:
+| Variable | Description | Default |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://pms_user:...@localhost:5432/pms_db` |
+| `DB_PASSWORD` | PostgreSQL password | `supersecretpassword` |
+| `JWT_SECRET` | JWT signing secret | *(change in production)* |
+| `JWT_EXPIRES_IN` | Token lifetime | `7d` |
+| `NODE_ENV` | Environment | `development` |
+| `CORS_ORIGIN` | Allowed frontend origin | `http://localhost:5173` |
 
-- `DATABASE_URL`: PostgreSQL connection string
-- `JWT_SECRET`: Secret key for JWT signing
-- `JWT_EXPIRES_IN`: Token expiration time
-- `NODE_ENV`: Environment (development/production)
+---
+
+## Roadmap
+
+| Phase | Status | Description |
+|---|---|---|
+| 1 — Foundation | ✅ Done | Project setup, schema, Docker |
+| 2 — Authentication | ✅ Done | JWT auth, roles, frontend pages |
+| 3 — Core CRUD | ✅ Done | Complexes, apartments, tenants, dashboard |
+| 3.5 — Leases | ✅ Done | Assign, move, terminate tenants |
+| 4 — Payments | 🔮 Planned | Rent tracking, overdue detection |
+| 5 — Maintenance & Expenses | 🔮 Planned | Tickets, expense categories |
+| 6 — Reporting | 🔮 Planned | Charts, analytics, exports |
+| 7 — Production | 🔮 Planned | Tests, hardening, CI/CD |
+
+---
 
 ## Security Notes
 
-- Change `JWT_SECRET` in production
-- Use strong database passwords
-- Enable CORS only for allowed origins
-- Validate all user inputs
-- Use HTTPS in production
-- Keep dependencies updated
+- Change `JWT_SECRET` before going to production.
+- Use strong database passwords.
+- Set `CORS_ORIGIN` to the exact frontend URL only.
+- Enable HTTPS in production.
+- Keep dependencies updated.
 
-## Contributing
-
-Follow the coding style guidelines:
-- Use TypeScript for all new code
-- Follow NestJS module structure
-- Use DTOs for request/response validation
-- Write tests for critical logic
-- Follow commit message conventions
+---
 
 ## License
 
 ISC
-
-## Support
-
-For issues or questions, please check the documentation or raise an issue in the repository.
