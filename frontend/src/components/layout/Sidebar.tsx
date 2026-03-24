@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useLogout } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/auth.store'
+import { authApi } from '@/api/auth.api'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: '📊' },
@@ -11,7 +13,13 @@ const navItems = [
 
 export function Sidebar() {
   const logout = useLogout()
-  const user = useAuthStore(s => s.user)
+  const token = useAuthStore(s => s.token)
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: authApi.me,
+    enabled: !!token,
+    staleTime: Infinity,
+  })
 
   return (
     <aside className="w-64 bg-gray-900 text-white flex flex-col h-full">
