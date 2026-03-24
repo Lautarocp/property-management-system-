@@ -153,6 +153,21 @@
 
 ---
 
+## Bug Fixes
+**Completed:** 2026-03-24
+
+### Sidebar User Info Not Showing After Refresh
+- **Root cause:** Zustand store initializes `user: null` on every page load. Token survived in `localStorage` so `isAuthenticated` was true, but `user` was always null after a browser refresh.
+- **Fix 1** — `frontend/src/store/auth.store.ts`: Persist `user` object to `localStorage` on `login()` and restore it via `loadUser()` on store init. Clear on `logout()`.
+- **Fix 2** — `frontend/src/components/shared/ProtectedRoute.tsx`: Added `useEffect` that calls `GET /api/auth/me` when `isAuthenticated` is true but `user` is null, then stores the result via `setUser`.
+- **Fix 3** — `frontend/src/components/layout/Sidebar.tsx`: Sidebar now fetches the current user directly via React Query (`queryKey: ['me']`, `staleTime: Infinity`) instead of relying solely on the Zustand store. This guarantees the user info displays correctly on both first login and after any page refresh.
+
+### Sidebar Visual Improvement
+- Replaced plain text user block with a row layout: circular avatar with user initials, name + email (truncated), role badge pushed to the right.
+- Added animated pulse skeleton shown while user data is loading instead of blank/broken layout.
+
+---
+
 ## Current Phase Status
 
 | Phase | Status | Completed |

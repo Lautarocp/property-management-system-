@@ -104,6 +104,14 @@ INFRASTRUCTURE FIXES
   ✅ Backend Dockerfile: OpenSSL installed for Prisma on Alpine
   ✅ docker-compose: CORS_ORIGIN + VITE_API_URL for remote deployment support
 
+BUG FIXES (2026-03-24)
+───────────────────────
+  ✅ Sidebar user info blank after refresh — fixed by persisting user to
+     localStorage, fetching /auth/me via ProtectedRoute on init, and using
+     React Query directly in Sidebar as the source of truth
+  ✅ Sidebar visual — avatar circle with initials, name/email row, role badge,
+     animated skeleton while loading
+
 ================================================================================
 DATABASE SCHEMA
 ================================================================================
