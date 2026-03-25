@@ -282,7 +282,16 @@ export function ApartmentsPage() {
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Apartment' : 'New Apartment'}</h3>
           <ApartmentForm
-            defaultValues={editing ?? undefined}
+            defaultValues={editing ? {
+              number: editing.number,
+              floor: editing.floor,
+              bedrooms: editing.bedrooms,
+              bathrooms: editing.bathrooms,
+              area: editing.area,
+              monthlyRent: Number(editing.monthlyRent),
+              status: editing.status,
+              complexId: editing.complexId,
+            } : undefined}
             onSubmit={editing ? handleUpdate : handleCreate}
             onCancel={() => { setShowCreate(false); setEditing(null) }}
             isLoading={createApartment.isPending || updateApartment.isPending}
