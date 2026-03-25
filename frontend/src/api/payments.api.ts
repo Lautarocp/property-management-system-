@@ -15,4 +15,5 @@ export const paymentsApi = {
   getOne: (id: string) => apiClient.get<Payment>(`/payments/${id}`).then(r => r.data),
   create: (data: CreatePaymentPayload) => apiClient.post<Payment>('/payments', data).then(r => r.data),
   markAsPaid: (id: string) => apiClient.patch<Payment>(`/payments/${id}/pay`).then(r => r.data),
+  markAsUnpaid: (id: string) => apiClient.patch<Payment>(`/payments/${id}/unpay`).then(r => r.data),
 }

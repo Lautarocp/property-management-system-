@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useTenants, useCreateTenant, useUpdateTenant, useDeleteTenant } from '@/hooks/useTenants'
-import { usePayments, useMarkAsPaid } from '@/hooks/usePayments'
+import { usePayments, useMarkAsPaid, useMarkAsUnpaid } from '@/hooks/usePayments'
 import { tenantsApi } from '@/api/tenants.api'
 import type { Tenant } from '@/types'
 import type { CreateTenantPayload } from '@/api/tenants.api'
@@ -113,6 +113,7 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
   })
   const { data: payments } = usePayments({ tenantId })
   const markAsPaid = useMarkAsPaid()
+  const markAsUnpaid = useMarkAsUnpaid()
 
   const activeLease = (tenant as any)?.leases?.find((l: any) => l.status === 'ACTIVE')
   const leaseHistory = (tenant as any)?.leases?.filter((l: any) => l.status !== 'ACTIVE') ?? []
@@ -308,6 +309,14 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
                             className="text-xs text-green-600 hover:underline"
                           >
                             Mark Paid
+                          </button>
+                        )}
+                        {p.status === 'PAID' && (
+                          <button
+                            onClick={() => markAsUnpaid.mutate(p.id)}
+                            className="text-xs text-yellow-600 hover:underline"
+                          >
+                            Mark Unpaid
                           </button>
                         )}
                       </div>

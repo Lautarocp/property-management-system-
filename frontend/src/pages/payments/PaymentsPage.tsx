@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
-import { usePayments, useCreatePayment, useMarkAsPaid } from '@/hooks/usePayments'
+import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid } from '@/hooks/usePayments'
 import { leasesApi } from '@/api/leases.api'
 import type { CreatePaymentPayload } from '@/api/payments.api'
 
@@ -115,6 +115,7 @@ export function PaymentsPage() {
   )
   const createPayment = useCreatePayment()
   const markAsPaid = useMarkAsPaid()
+  const markAsUnpaid = useMarkAsUnpaid()
 
   const handleCreate = (data: CreatePaymentPayload) => {
     createPayment.mutate(data, { onSuccess: () => setShowCreate(false) })
@@ -227,15 +228,26 @@ export function PaymentsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {(payment.status === 'PENDING' || payment.status === 'OVERDUE') && (
-                      <button
-                        onClick={() => handleMarkPaid(payment.id)}
-                        disabled={markAsPaid.isPending}
-                        className="text-xs text-green-600 hover:underline disabled:opacity-50"
-                      >
-                        Mark Paid
-                      </button>
-                    )}
+                    <div className="flex gap-3">
+                      {(payment.status === 'PENDING' || payment.status === 'OVERDUE') && (
+                        <button
+                          onClick={() => handleMarkPaid(payment.id)}
+                          disabled={markAsPaid.isPending}
+                          className="text-xs text-green-600 hover:underline disabled:opacity-50"
+                        >
+                          Mark Paid
+                        </button>
+                      )}
+                      {payment.status === 'PAID' && (
+                        <button
+                          onClick={() => markAsUnpaid.mutate(payment.id)}
+                          disabled={markAsUnpaid.isPending}
+                          className="text-xs text-yellow-600 hover:underline disabled:opacity-50"
+                        >
+                          Mark Unpaid
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

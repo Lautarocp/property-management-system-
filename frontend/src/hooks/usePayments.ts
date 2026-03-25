@@ -29,3 +29,14 @@ export function useMarkAsPaid() {
     },
   })
 }
+
+export function useMarkAsUnpaid() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => paymentsApi.markAsUnpaid(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+    },
+  })
+}

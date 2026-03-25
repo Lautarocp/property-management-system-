@@ -79,4 +79,12 @@ export class PaymentsService {
       data: { status: 'PAID', paidDate: new Date() },
     });
   }
+
+  async markAsUnpaid(id: string) {
+    await this.findOne(id);
+    return this.prisma.payment.update({
+      where: { id },
+      data: { status: 'PENDING', paidDate: null },
+    });
+  }
 }
