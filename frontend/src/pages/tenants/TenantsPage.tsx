@@ -12,7 +12,8 @@ function TenantForm({ defaultValues, onSubmit, onCancel, isLoading }: {
   onCancel: () => void
   isLoading: boolean
 }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<CreateTenantPayload>({ defaultValues })
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<CreateTenantPayload>({ defaultValues })
+  const hasGuarantor = watch('hasGuarantor')
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -48,6 +49,41 @@ function TenantForm({ defaultValues, onSubmit, onCancel, isLoading }: {
           <textarea {...register('notes')} rows={3} placeholder="Any relevant notes about this tenant..." className="w-full border rounded-lg px-3 py-2 text-sm" />
         </div>
       </div>
+
+      {/* Guarantor */}
+      <div className="border-t pt-4">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" {...register('hasGuarantor')} className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+          <span className="text-sm font-medium text-gray-700">This tenant has a guarantor</span>
+        </label>
+
+        {hasGuarantor && (
+          <div className="mt-4 grid grid-cols-2 gap-4 bg-gray-50 border rounded-lg p-4">
+            <p className="col-span-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Guarantor Information</p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input {...register('guarantorFirstName')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input {...register('guarantorLastName')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">DNI / ID</label>
+              <input {...register('guarantorDni')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input {...register('guarantorPhone')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" {...register('guarantorEmail')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-3 justify-end pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
         <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
@@ -140,6 +176,35 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
                 </div>
               ) : (
                 <p className="text-sm text-gray-400 italic">No notes. Click Edit to add one.</p>
+              )}
+            </section>
+
+            {/* Guarantor */}
+            <section>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Guarantor</h4>
+              {tenant.hasGuarantor ? (
+                <div className="bg-gray-50 border rounded-lg p-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-400">Name</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      {[tenant.guarantorFirstName, tenant.guarantorLastName].filter(Boolean).join(' ') || '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">DNI / ID</p>
+                    <p className="text-sm font-medium text-gray-800">{tenant.guarantorDni || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Phone</p>
+                    <p className="text-sm font-medium text-gray-800">{tenant.guarantorPhone || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Email</p>
+                    <p className="text-sm font-medium text-gray-800">{tenant.guarantorEmail || '—'}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">No guarantor registered.</p>
               )}
             </section>
 
@@ -274,6 +339,12 @@ export function TenantsPage() {
               dni: editing.dni,
               birthDate: editing.birthDate?.split('T')[0],
               notes: editing.notes,
+              hasGuarantor: editing.hasGuarantor,
+              guarantorFirstName: editing.guarantorFirstName,
+              guarantorLastName: editing.guarantorLastName,
+              guarantorDni: editing.guarantorDni,
+              guarantorPhone: editing.guarantorPhone,
+              guarantorEmail: editing.guarantorEmail,
             } : undefined}
             onSubmit={editing ? handleUpdate : handleCreate}
             onCancel={() => { setShowCreate(false); setEditing(null) }}

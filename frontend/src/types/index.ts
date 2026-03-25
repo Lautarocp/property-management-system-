@@ -48,6 +48,12 @@ export interface Tenant {
   dni?: string
   birthDate?: string
   notes?: string
+  hasGuarantor: boolean
+  guarantorFirstName?: string
+  guarantorLastName?: string
+  guarantorDni?: string
+  guarantorPhone?: string
+  guarantorEmail?: string
   isActive: boolean
   createdById: string
   createdAt: string

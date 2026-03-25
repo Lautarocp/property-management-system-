@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsEmail, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsOptional, IsDateString, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTenantDto {
@@ -35,4 +35,34 @@ export class CreateTenantDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  hasGuarantor?: boolean;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  guarantorFirstName?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  guarantorLastName?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  guarantorDni?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  guarantorPhone?: string;
+
+  @ApiPropertyOptional()
+  @IsEmail()
+  @IsOptional()
+  guarantorEmail?: string;
 }

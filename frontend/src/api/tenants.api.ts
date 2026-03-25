@@ -9,6 +9,12 @@ export interface CreateTenantPayload {
   dni?: string
   birthDate?: string
   notes?: string
+  hasGuarantor?: boolean
+  guarantorFirstName?: string
+  guarantorLastName?: string
+  guarantorDni?: string
+  guarantorPhone?: string
+  guarantorEmail?: string
 }
 
 export const tenantsApi = {
