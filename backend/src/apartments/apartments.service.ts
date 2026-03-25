@@ -49,6 +49,11 @@ export class ApartmentsService {
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.apartment.delete({ where: { id } });
+    const leases = await this.prisma.lease.findMany({ where: { apartmentId: id }, select: { id: true } });
+    const leaseIds = leases.map((l: { id: string }) => l.id);
+    await this.prisma.payment.deleteMany({ where: { leaseId: { in: leaseIds } } });
+    await this.prisma.lease.deleteMany({ where: { apartmentId: id } });
+    await this.prisma.maintenanceRequest.deleteMany({ where: { apartmentId: id } });
+    await this.prisma.apartment.delete({ where: { id } });
   }
 }
