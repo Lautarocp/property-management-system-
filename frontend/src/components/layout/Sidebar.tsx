@@ -9,6 +9,7 @@ const navItems = [
   { to: '/complexes', label: 'Complexes', icon: '🏢' },
   { to: '/apartments', label: 'Apartments', icon: '🏠' },
   { to: '/tenants', label: 'Tenants', icon: '👥' },
+  { to: '/payments', label: 'Payments', icon: '💰' },
 ]
 
 export function Sidebar() {

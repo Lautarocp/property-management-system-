@@ -2,9 +2,17 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useTenants, useCreateTenant, useUpdateTenant, useDeleteTenant } from '@/hooks/useTenants'
+import { usePayments, useMarkAsPaid } from '@/hooks/usePayments'
 import { tenantsApi } from '@/api/tenants.api'
 import type { Tenant } from '@/types'
 import type { CreateTenantPayload } from '@/api/tenants.api'
+
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  PENDING: 'bg-yellow-100 text-yellow-700',
+  PAID: 'bg-green-100 text-green-700',
+  OVERDUE: 'bg-red-100 text-red-700',
+  CANCELLED: 'bg-gray-100 text-gray-500',
+}
 
 function TenantForm({ defaultValues, onSubmit, onCancel, isLoading }: {
   defaultValues?: Partial<CreateTenantPayload>
@@ -103,6 +111,8 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
     queryKey: ['tenant', tenantId],
     queryFn: () => tenantsApi.getOne(tenantId),
   })
+  const { data: payments } = usePayments({ tenantId })
+  const markAsPaid = useMarkAsPaid()
 
   const activeLease = (tenant as any)?.leases?.find((l: any) => l.status === 'ACTIVE')
   const leaseHistory = (tenant as any)?.leases?.filter((l: any) => l.status !== 'ACTIVE') ?? []
@@ -272,6 +282,42 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
                 </div>
               </section>
             )}
+
+            {/* Payment History */}
+            <section>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment History</h4>
+              {payments && payments.length > 0 ? (
+                <div className="space-y-2">
+                  {(payments as any[]).map(p => (
+                    <div
+                      key={p.id}
+                      className={`flex items-center justify-between border rounded-lg px-4 py-2 text-sm ${p.status === 'OVERDUE' ? 'bg-red-50 border-red-200' : ''}`}
+                    >
+                      <div>
+                        <span className="font-medium">${Number(p.amount).toLocaleString()}</span>
+                        <span className="text-gray-400 ml-2 text-xs">{p.type}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-500 text-xs">Due {new Date(p.dueDate).toLocaleDateString()}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                          {p.status}
+                        </span>
+                        {(p.status === 'PENDING' || p.status === 'OVERDUE') && (
+                          <button
+                            onClick={() => markAsPaid.mutate(p.id)}
+                            className="text-xs text-green-600 hover:underline"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">No payments recorded.</p>
+              )}
+            </section>
           </div>
         ) : null}
       </div>

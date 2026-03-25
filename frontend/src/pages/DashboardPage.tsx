@@ -39,7 +39,8 @@ export function DashboardPage() {
           <StatCard label="Occupied" value={stats?.occupiedApartments} icon="🔑" color="bg-orange-100" />
           <StatCard label="Tenants" value={stats?.totalTenants} icon="👥" color="bg-cyan-100" />
           <StatCard label="Active Leases" value={stats?.activeLeases} icon="📄" color="bg-indigo-100" />
-          <StatCard label="Pending Payments" value={stats?.pendingPayments} icon="💰" color="bg-red-100" />
+          <StatCard label="Pending Payments" value={stats?.pendingPayments} icon="💰" color="bg-yellow-100" />
+          <StatCard label="Overdue Payments" value={stats?.overduePayments} icon="⚠️" color="bg-red-100" />
         </div>
       )}
     </div>
