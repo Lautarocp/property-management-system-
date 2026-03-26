@@ -105,8 +105,6 @@ model Apartment {
   id           String          @id @default(cuid())
   number       String
   floor        Int?
-  bedrooms     Int             @default(1)
-  bathrooms    Int             @default(1)
   area         Float?
   monthlyRent  Decimal         @db.Decimal(10, 2)
   status       ApartmentStatus @default(AVAILABLE)

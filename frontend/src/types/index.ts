@@ -28,8 +28,6 @@ export interface Apartment {
   id: string
   number: string
   floor?: number
-  bedrooms: number
-  bathrooms: number
   area?: number
   monthlyRent: number
   status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'INACTIVE'

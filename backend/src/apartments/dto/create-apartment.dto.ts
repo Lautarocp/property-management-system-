@@ -9,28 +9,18 @@ export class CreateApartmentDto {
   @IsNotEmpty()
   number!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Type(() => Number)
   @IsNumber()
-  floor!: number;
+  @IsOptional()
+  floor?: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  bedrooms!: number;
-
-  @ApiProperty()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  bathrooms!: number;
-
-  @ApiProperty()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  area!: number;
+  @IsOptional()
+  area?: number;
 
   @ApiProperty()
   @Type(() => Number)

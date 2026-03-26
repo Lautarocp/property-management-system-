@@ -3,10 +3,8 @@ import type { Apartment } from '@/types'
 
 export interface CreateApartmentPayload {
   number: string
-  floor: number
-  bedrooms: number
-  bathrooms: number
-  area: number
+  floor?: number
+  area?: number
   monthlyRent: number
   status?: Apartment['status']
   complexId: string

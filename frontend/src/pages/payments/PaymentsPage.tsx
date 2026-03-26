@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid } from '@/hooks/usePayments'
@@ -34,12 +34,31 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CreatePaymentPayload>()
   const selectedLeaseId = watch('leaseId')
+  const [percentMode, setPercentMode] = useState(false)
+  const [percent, setPercent] = useState('')
+  const selectedLease = activeLeases.find((l: any) => l.id === selectedLeaseId)
+  const monthlyRent = selectedLease ? Number(selectedLease.monthlyRent) : 0
 
   const handleLeaseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const leaseId = e.target.value
     setValue('leaseId', leaseId)
     const lease = activeLeases.find((l: any) => l.id === leaseId)
-    if (lease) setValue('amount', Number(lease.monthlyRent))
+    if (lease) {
+      const rent = Number(lease.monthlyRent)
+      if (percentMode && percent) {
+        setValue('amount', Math.round(rent * Number(percent) / 100 * 100) / 100)
+      } else {
+        setValue('amount', rent)
+      }
+    }
+  }
+
+  const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setPercent(val)
+    if (monthlyRent && val) {
+      setValue('amount', Math.round(monthlyRent * Number(val) / 100 * 100) / 100)
+    }
   }
 
   return (
@@ -55,19 +74,56 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
             <option value="">Select a lease...</option>
             {activeLeases.map((l: any) => (
               <option key={l.id} value={l.id}>
-                {l.tenant.firstName} {l.tenant.lastName} → #{l.apartment.number} ({l.apartment.complex?.name})
+                {l.tenant.firstName} {l.tenant.lastName} → #{l.apartment.number} ({l.apartment.complex?.name}) — ${Number(l.monthlyRent).toLocaleString()}/mo
               </option>
             ))}
           </select>
           {errors.leaseId && <p className="text-red-500 text-xs mt-1">Required</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-sm font-medium text-gray-700">Amount *</label>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={percentMode}
+                onChange={e => {
+                  setPercentMode(e.target.checked)
+                  if (!e.target.checked) setPercent('')
+                }}
+                className="w-3.5 h-3.5"
+              />
+              <span className="text-xs text-gray-500">% of rent</span>
+            </label>
+          </div>
+          {percentMode ? (
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={percent}
+                  onChange={handlePercentChange}
+                  placeholder="e.g. 50"
+                  className="w-full border rounded-lg px-3 py-2 text-sm pr-8"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+              </div>
+              {monthlyRent > 0 && percent && (
+                <span className="text-sm text-gray-500 whitespace-nowrap">
+                  = ${(Math.round(monthlyRent * Number(percent) / 100 * 100) / 100).toLocaleString()}
+                </span>
+              )}
+            </div>
+          ) : null}
           <input
             type="number"
             step="0.01"
             {...register('amount', { required: true, valueAsNumber: true })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className={`w-full border rounded-lg px-3 py-2 text-sm ${percentMode ? 'mt-2 bg-gray-50' : ''}`}
+            readOnly={percentMode}
           />
           {errors.amount && <p className="text-red-500 text-xs mt-1">Required</p>}
         </div>

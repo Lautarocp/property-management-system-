@@ -33,20 +33,12 @@ function ApartmentForm({ defaultValues, onSubmit, onCancel, isLoading }: {
           {errors.number && <p className="text-red-500 text-xs mt-1">Required</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Floor *</label>
-          <input type="number" {...register('floor', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+          <input type="number" {...register('floor', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms *</label>
-          <input type="number" min={0} {...register('bedrooms', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms *</label>
-          <input type="number" min={0} {...register('bathrooms', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²) *</label>
-          <input type="number" min={0} step="0.01" {...register('area', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
+          <input type="number" min={0} step="0.01" {...register('area', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent *</label>
@@ -285,8 +277,6 @@ export function ApartmentsPage() {
             defaultValues={editing ? {
               number: editing.number,
               floor: editing.floor,
-              bedrooms: editing.bedrooms,
-              bathrooms: editing.bathrooms,
               area: editing.area,
               monthlyRent: Number(editing.monthlyRent),
               status: editing.status,
@@ -310,7 +300,7 @@ export function ApartmentsPage() {
               <tr>
                 <th className="px-4 py-3 text-left">Unit</th>
                 <th className="px-4 py-3 text-left">Complex</th>
-                <th className="px-4 py-3 text-left">Beds/Baths</th>
+                <th className="px-4 py-3 text-left">Area</th>
                 <th className="px-4 py-3 text-left">Rent</th>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Tenant</th>
@@ -325,7 +315,7 @@ export function ApartmentsPage() {
                   <tr key={apt.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">#{apt.number} — Floor {apt.floor}</td>
                     <td className="px-4 py-3 text-gray-500">{apt.complex?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{apt.bedrooms}bd / {apt.bathrooms}ba</td>
+                    <td className="px-4 py-3 text-gray-500">{apt.area ? `${apt.area} m²` : '—'}</td>
                     <td className="px-4 py-3 font-medium">${apt.monthlyRent.toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status as Apartment['status']]}`}>
