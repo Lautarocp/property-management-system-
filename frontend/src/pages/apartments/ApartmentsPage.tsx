@@ -235,6 +235,19 @@ export function ApartmentsPage() {
   const [editing, setEditing] = useState<Apartment | null>(null)
   const [assigning, setAssigning] = useState<any | null>(null)
   const [moving, setMoving] = useState<any | null>(null)
+  const [filterComplex, setFilterComplex] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+
+  const complexOptions: { id: string; name: string }[] = (apartments as any[] ?? []).reduce(
+    (acc: any[], a: any) => {
+      if (a.complex && !acc.find((c: any) => c.id === a.complex.id)) acc.push(a.complex)
+      return acc
+    }, []
+  )
+
+  const filtered = (apartments as any[] ?? [])
+    .filter((a: any) => !filterComplex || a.complexId === filterComplex)
+    .filter((a: any) => !filterStatus || a.status === filterStatus)
 
   const handleCreate = (data: CreateApartmentPayload) => {
     createApartment.mutate(data, { onSuccess: () => setShowCreate(false) })
@@ -263,11 +276,41 @@ export function ApartmentsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Apartments</h2>
-          <p className="text-gray-500 text-sm mt-1">{apartments?.length ?? 0} units</p>
+          <p className="text-gray-500 text-sm mt-1">{filtered.length} of {apartments?.length ?? 0} units</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
           + Add Apartment
         </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3 mb-6 flex-wrap">
+        <select
+          value={filterComplex}
+          onChange={(e: { target: { value: string } }) => setFilterComplex(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
+        >
+          <option value="">All Complexes</option>
+          {complexOptions.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+
+        <div className="flex gap-2">
+          {(['', 'AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'INACTIVE'] as const).map(s => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${
+                filterStatus === s
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {s === '' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
       {(showCreate || editing) && (
@@ -293,6 +336,8 @@ export function ApartmentsPage() {
         <div className="text-gray-400">Loading...</div>
       ) : apartments?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No apartments yet. Add your first one!</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">No apartments match the selected filters.</div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
@@ -308,7 +353,7 @@ export function ApartmentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {(apartments as any[])?.map(apt => {
+              {filtered.map((apt: any) => {
                 const activeLease = apt.leases?.[0]
                 const tenant = activeLease?.tenant
                 return (
