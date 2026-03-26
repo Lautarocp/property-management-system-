@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
-import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid } from '@/hooks/usePayments'
+import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments'
 import { leasesApi } from '@/api/leases.api'
 import type { CreatePaymentPayload } from '@/api/payments.api'
 
@@ -165,9 +165,71 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
   )
 }
 
+function EditPaymentModal({ payment, onClose }: { payment: any; onClose: () => void }) {
+  const updatePayment = useUpdatePayment()
+  const { register, handleSubmit } = useForm({
+    defaultValues: {
+      amount: Number(payment.amount),
+      dueDate: payment.dueDate?.split('T')[0],
+      type: payment.type,
+      notes: payment.notes ?? '',
+    },
+  })
+
+  const onSubmit = (data: any) => {
+    updatePayment.mutate(
+      { id: payment.id, data: { ...data, amount: Number(data.amount) } },
+      { onSuccess: onClose }
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+        <h3 className="text-lg font-semibold mb-1">Edit Payment</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          {payment.tenant.firstName} {payment.tenant.lastName} — #{payment.lease.apartment.number}
+        </p>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+              <input type="number" step="0.01" {...register('amount', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+              <input type="date" {...register('dueDate', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select {...register('type')} className="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="RENT">Rent</option>
+                <option value="DEPOSIT">Deposit</option>
+                <option value="LATE_FEE">Late Fee</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <input {...register('notes')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={updatePayment.isPending} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              {updatePayment.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export function PaymentsPage() {
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING' | 'OVERDUE' | 'PAID'>('ALL')
   const [showCreate, setShowCreate] = useState(false)
+  const [editing, setEditing] = useState<any | null>(null)
 
   const { data: payments, isLoading } = usePayments(
     activeFilter === 'ALL' ? undefined : { status: activeFilter }
@@ -175,6 +237,7 @@ export function PaymentsPage() {
   const createPayment = useCreatePayment()
   const markAsPaid = useMarkAsPaid()
   const markAsUnpaid = useMarkAsUnpaid()
+  const deletePayment = useDeletePayment()
 
   const handleCreate = (data: CreatePaymentPayload) => {
     createPayment.mutate(data, { onSuccess: () => setShowCreate(false) })
@@ -182,6 +245,10 @@ export function PaymentsPage() {
 
   const handleMarkPaid = (id: string) => {
     markAsPaid.mutate(id)
+  }
+
+  const handleDelete = (id: string) => {
+    if (confirm('Delete this payment?')) deletePayment.mutate(id)
   }
 
   const counts = {
@@ -193,6 +260,8 @@ export function PaymentsPage() {
 
   return (
     <div className="p-8">
+      {editing && <EditPaymentModal payment={editing} onClose={() => setEditing(null)} />}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Payments</h2>
@@ -306,6 +375,19 @@ export function PaymentsPage() {
                           Mark Unpaid
                         </button>
                       )}
+                      <button
+                        onClick={() => setEditing(payment)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(payment.id)}
+                        disabled={deletePayment.isPending}
+                        className="text-xs text-red-500 hover:underline disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
