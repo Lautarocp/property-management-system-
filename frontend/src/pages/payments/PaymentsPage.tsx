@@ -39,6 +39,9 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
   const selectedLease = activeLeases.find((l: any) => l.id === selectedLeaseId)
   const monthlyRent = selectedLease ? Number(selectedLease.monthlyRent) : 0
 
+  const calcAmount = (rent: number, pct: number) =>
+    Math.round((rent + rent * pct / 100) * 100) / 100
+
   const handleLeaseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const leaseId = e.target.value
     setValue('leaseId', leaseId)
@@ -46,7 +49,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
     if (lease) {
       const rent = Number(lease.monthlyRent)
       if (percentMode && percent) {
-        setValue('amount', Math.round(rent * Number(percent) / 100 * 100) / 100)
+        setValue('amount', calcAmount(rent, Number(percent)))
       } else {
         setValue('amount', rent)
       }
@@ -57,7 +60,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
     const val = e.target.value
     setPercent(val)
     if (monthlyRent && val) {
-      setValue('amount', Math.round(monthlyRent * Number(val) / 100 * 100) / 100)
+      setValue('amount', calcAmount(monthlyRent, Number(val)))
     }
   }
 
@@ -113,7 +116,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
               </div>
               {monthlyRent > 0 && percent && (
                 <span className="text-sm text-gray-500 whitespace-nowrap">
-                  = ${(Math.round(monthlyRent * Number(percent) / 100 * 100) / 100).toLocaleString()}
+                  = ${calcAmount(monthlyRent, Number(percent)).toLocaleString()}
                 </span>
               )}
             </div>
