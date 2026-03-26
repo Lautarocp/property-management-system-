@@ -343,6 +343,18 @@ export function TenantsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<Tenant | null>(null)
   const [viewing, setViewing] = useState<string | null>(null)
+  const [filterComplex, setFilterComplex] = useState('')
+
+  const complexOptions = (tenants as any[] ?? []).reduce((acc: any[], t: any) => {
+    const complex = t.leases?.[0]?.apartment?.complex
+    if (complex && !acc.find((c: any) => c.id === complex.id)) acc.push(complex)
+    return acc
+  }, [])
+
+  const filtered = (tenants as any[] ?? []).filter((t: any) => {
+    if (!filterComplex) return true
+    return t.leases?.[0]?.apartment?.complex?.id === filterComplex
+  })
 
   const handleCreate = (data: CreateTenantPayload) => {
     createTenant.mutate(data, { onSuccess: () => setShowCreate(false) })
@@ -375,11 +387,25 @@ export function TenantsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Tenants</h2>
-          <p className="text-gray-500 text-sm mt-1">{tenants?.length ?? 0} tenants</p>
+          <p className="text-gray-500 text-sm mt-1">{filtered.length} of {tenants?.length ?? 0} tenants</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
           + Add Tenant
         </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3 mb-6">
+        <select
+          value={filterComplex}
+          onChange={(e: { target: { value: string } }) => setFilterComplex(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
+        >
+          <option value="">All Complexes</option>
+          {complexOptions.map((c: any) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
       </div>
 
       {(showCreate || editing) && (
@@ -412,6 +438,8 @@ export function TenantsPage() {
         <div className="text-gray-400">Loading...</div>
       ) : tenants?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No tenants yet. Add your first one!</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">No tenants match the selected filter.</div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
@@ -426,7 +454,7 @@ export function TenantsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {(tenants as any[])?.map(tenant => {
+              {filtered.map((tenant: any) => {
                 const activeLease = tenant.leases?.[0]
                 return (
                   <tr key={tenant.id} className="hover:bg-gray-50">
