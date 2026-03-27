@@ -166,6 +166,17 @@ model Lease {
   tenant        Tenant      @relation(fields: [tenantId], references: [id])
 
   payments      Payment[]
+  items         LeaseItem[]
+}
+
+model LeaseItem {
+  id        String   @id @default(cuid())
+  name      String
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  leaseId   String
+  lease     Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
 }
 
 model Payment {

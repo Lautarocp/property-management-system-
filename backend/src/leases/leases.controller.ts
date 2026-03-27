@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { LeasesService } from './leases.service';
 import { CreateLeaseDto } from './dto/create-lease.dto';
 import { TransferLeaseDto } from './dto/transfer-lease.dto';
+import { CreateLeaseItemDto } from './dto/create-lease-item.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 @ApiTags('leases')
@@ -36,5 +37,20 @@ export class LeasesController {
   @Patch(':id/transfer')
   transfer(@Param('id') id: string, @Body() dto: TransferLeaseDto) {
     return this.service.transfer(id, dto);
+  }
+
+  @Post(':id/items')
+  addItem(@Param('id') id: string, @Body() dto: CreateLeaseItemDto) {
+    return this.service.addItem(id, dto);
+  }
+
+  @Patch(':id/items/:itemId')
+  updateItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() dto: CreateLeaseItemDto) {
+    return this.service.updateItem(id, itemId, dto);
+  }
+
+  @Delete(':id/items/:itemId')
+  removeItem(@Param('id') id: string, @Param('itemId') itemId: string) {
+    return this.service.removeItem(id, itemId);
   }
 }

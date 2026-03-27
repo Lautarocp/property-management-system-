@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateLeaseDto } from './dto/create-lease.dto';
 import { TransferLeaseDto } from './dto/transfer-lease.dto';
+import { CreateLeaseItemDto } from './dto/create-lease-item.dto';
 
 @Injectable()
 export class LeasesService {
@@ -13,6 +14,7 @@ export class LeasesService {
       include: {
         tenant: { select: { id: true, firstName: true, lastName: true, email: true } },
         apartment: { select: { id: true, number: true, floor: true, complex: { select: { name: true } } } },
+        items: { orderBy: { createdAt: 'asc' } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -21,10 +23,30 @@ export class LeasesService {
   async findOne(id: string) {
     const lease = await this.prisma.lease.findUnique({
       where: { id },
-      include: { tenant: true, apartment: true },
+      include: { tenant: true, apartment: true, items: { orderBy: { createdAt: 'asc' } } },
     });
     if (!lease) throw new NotFoundException('Lease not found');
     return lease;
+  }
+
+  async addItem(leaseId: string, dto: CreateLeaseItemDto) {
+    await this.findOne(leaseId);
+    return this.prisma.leaseItem.create({
+      data: { leaseId, name: dto.name, amount: dto.amount },
+    });
+  }
+
+  async updateItem(leaseId: string, itemId: string, dto: CreateLeaseItemDto) {
+    await this.findOne(leaseId);
+    return this.prisma.leaseItem.update({
+      where: { id: itemId },
+      data: { name: dto.name, amount: dto.amount },
+    });
+  }
+
+  async removeItem(leaseId: string, itemId: string) {
+    await this.findOne(leaseId);
+    await this.prisma.leaseItem.delete({ where: { id: itemId } });
   }
 
   async create(dto: CreateLeaseDto) {

@@ -8,6 +8,7 @@ export interface DashboardStats {
   totalTenants: number
   activeLeases: number
   pendingPayments: number
+  overduePayments: number
 }
 
 export const dashboardApi = {

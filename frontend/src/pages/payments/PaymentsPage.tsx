@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments'
@@ -251,12 +251,6 @@ export function PaymentsPage() {
     if (confirm('Delete this payment?')) deletePayment.mutate(id)
   }
 
-  const counts = {
-    ALL: payments?.length ?? 0,
-    PENDING: (payments as any[])?.filter(p => p.status === 'PENDING').length ?? 0,
-    OVERDUE: (payments as any[])?.filter(p => p.status === 'OVERDUE').length ?? 0,
-    PAID: (payments as any[])?.filter(p => p.status === 'PAID').length ?? 0,
-  }
 
   return (
     <div className="p-8">
