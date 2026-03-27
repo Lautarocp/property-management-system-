@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 
@@ -39,14 +40,21 @@ export class TenantsService {
     return tenant;
   }
 
-  create(dto: CreateTenantDto, userId: string) {
-    return this.prisma.tenant.create({
-      data: {
-        ...dto,
-        birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
-        createdById: userId,
-      },
-    });
+  async create(dto: CreateTenantDto, userId: string) {
+    try {
+      return await this.prisma.tenant.create({
+        data: {
+          ...dto,
+          birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+          createdById: userId,
+        },
+      });
+    } catch (e) {
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw new ConflictException('A tenant with this email already exists');
+      }
+      throw e;
+    }
   }
 
   async update(id: string, dto: UpdateTenantDto) {
