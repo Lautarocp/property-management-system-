@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useApartments, useCreateApartment, useUpdateApartment, useDeleteApartment } from '@/hooks/useApartments'
 import { useComplexes } from '@/hooks/useComplexes'
 import { useTenants } from '@/hooks/useTenants'
-import { useCreateLease, useTerminateLease, useTransferLease } from '@/hooks/useLeases'
+import { useCreateLease, useTerminateLease, useTransferLease, useAddLeaseItemForApartment, useRemoveLeaseItemForApartment } from '@/hooks/useLeases'
 import type { Apartment } from '@/types'
 import type { CreateApartmentPayload } from '@/api/apartments.api'
 import type { CreateLeasePayload, TransferLeasePayload } from '@/api/leases.api'
@@ -224,6 +224,147 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
   )
 }
 
+function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose: () => void }) {
+  const addItem = useAddLeaseItemForApartment()
+  const removeItem = useRemoveLeaseItemForApartment()
+  const [newItemName, setNewItemName] = useState('')
+  const [newItemAmount, setNewItemAmount] = useState('')
+
+  const activeLease = apartment.leases?.[0]
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-lg mx-0 sm:mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">#{apartment.number} — Floor {apartment.floor}</h3>
+            <p className="text-sm text-gray-500">{apartment.complex?.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Apartment Info */}
+          <section>
+            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Details</h4>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-gray-400">Base Rent</p>
+                <p className="text-sm font-semibold text-gray-800">${Number(apartment.monthlyRent).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Area</p>
+                <p className="text-sm font-medium text-gray-800">{apartment.area ? `${apartment.area} m²` : '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Status</p>
+                <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[apartment.status as Apartment['status']]}`}>
+                  {apartment.status}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Active Lease & Items */}
+          {activeLease ? (
+            <section>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Active Lease</h4>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">{activeLease.tenant?.firstName} {activeLease.tenant?.lastName}</p>
+                    <p className="text-xs text-gray-500">{activeLease.tenant?.email}</p>
+                  </div>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">ACTIVE</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 pt-2 border-t border-blue-200 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-400">Monthly Rent</p>
+                    <p className="font-semibold text-gray-800">${Number(activeLease.monthlyRent).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Start</p>
+                    <p className="text-gray-800">{new Date(activeLease.startDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">End</p>
+                    <p className="text-gray-800">{new Date(activeLease.endDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+
+                {/* Payment Breakdown */}
+                <div className="pt-3 border-t border-blue-200">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment Breakdown</p>
+                  {activeLease.items && activeLease.items.length > 0 ? (
+                    <div className="space-y-1 mb-3">
+                      {activeLease.items.map((item: any) => (
+                        <div key={item.id} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">{item.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-gray-900">${Number(item.amount).toLocaleString()}</span>
+                            <button
+                              onClick={() => removeItem.mutate({ leaseId: activeLease.id, itemId: item.id })}
+                              className="text-xs text-red-400 hover:text-red-600"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between text-sm font-semibold border-t border-blue-200 pt-1 mt-1">
+                        <span className="text-gray-700">Total</span>
+                        <span className="text-gray-900">
+                          ${activeLease.items.reduce((sum: number, i: any) => sum + Number(i.amount), 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic mb-2">No items yet.</p>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Item name"
+                      value={newItemName}
+                      onChange={(e: { target: { value: string } }) => setNewItemName(e.target.value)}
+                      className="flex-1 border rounded-lg px-2 py-1 text-xs"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={newItemAmount}
+                      onChange={(e: { target: { value: string } }) => setNewItemAmount(e.target.value)}
+                      className="w-24 border rounded-lg px-2 py-1 text-xs"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!newItemName.trim() || !newItemAmount) return
+                        addItem.mutate(
+                          { leaseId: activeLease.id, data: { name: newItemName.trim(), amount: Number(newItemAmount) } },
+                          { onSuccess: () => { setNewItemName(''); setNewItemAmount('') } }
+                        )
+                      }}
+                      disabled={addItem.isPending}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : (
+            <section>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Active Lease</h4>
+              <p className="text-sm text-gray-400 italic">No active lease — apartment is currently unoccupied.</p>
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ApartmentsPage() {
   const { data: apartments, isLoading } = useApartments()
   const createApartment = useCreateApartment()
@@ -233,6 +374,7 @@ export function ApartmentsPage() {
 
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<Apartment | null>(null)
+  const [viewing, setViewing] = useState<any | null>(null)
   const [assigning, setAssigning] = useState<any | null>(null)
   const [moving, setMoving] = useState<any | null>(null)
   const [filterComplex, setFilterComplex] = useState('')
@@ -270,6 +412,7 @@ export function ApartmentsPage() {
 
   return (
     <div className="p-8">
+      {viewing && <ApartmentDetailPanel apartment={viewing} onClose={() => setViewing(null)} />}
       {assigning && <AssignTenantModal apartment={assigning} onClose={() => setAssigning(null)} />}
       {moving && <MoveTenantModal apartment={moving} allApartments={apartments ?? []} onClose={() => setMoving(null)} />}
 
@@ -375,6 +518,7 @@ export function ApartmentsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2 flex-wrap">
+                        <button onClick={() => setViewing(apt)} className="text-xs text-indigo-600 hover:underline">View</button>
                         {!tenant ? (
                           <button onClick={() => setAssigning(apt)} className="text-xs text-green-600 hover:underline">Assign</button>
                         ) : (

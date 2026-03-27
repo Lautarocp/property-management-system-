@@ -27,7 +27,8 @@
       "Bash(ssh n1ce@192.168.2.170 \"cd /home/n1ce/property-management-system/frontend && npx vite build 2>&1 | tail -10\")",
       "Bash(ssh n1ce@192.168.2.170 \"docker ps --format ''{{.Names}}''\")",
       "Bash(rsync -av /Users/lautaropomposiello/Documents/Proyecto-departamento/property-management-system-/frontend/src/ n1ce@192.168.2.170:/home/n1ce/property-management-system/frontend/src/)",
-      "Bash(ssh n1ce@192.168.2.170 \"docker restart pms_backend 2>&1\")"
+      "Bash(ssh n1ce@192.168.2.170 \"docker restart pms_backend 2>&1\")",
+      "Bash(ssh n1ce@192.168.2.170 \"docker cp /home/n1ce/property-management-system/backend/src/apartments/apartments.service.ts pms_backend:/app/src/apartments/apartments.service.ts && docker restart pms_backend 2>&1\")"
     ]
   }
 }

@@ -15,7 +15,10 @@ export class ApartmentsService {
         leases: {
           where: { status: 'ACTIVE' },
           take: 1,
-          include: { tenant: { select: { id: true, firstName: true, lastName: true, email: true } } },
+          include: {
+            tenant: { select: { id: true, firstName: true, lastName: true, email: true } },
+            items: { orderBy: { createdAt: 'asc' } },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },

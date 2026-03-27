@@ -61,3 +61,21 @@ export function useRemoveLeaseItem(tenantId: string) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tenant', tenantId] }) },
   })
 }
+
+export function useAddLeaseItemForApartment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ leaseId, data }: { leaseId: string; data: LeaseItemPayload }) =>
+      leasesApi.addItem(leaseId, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['apartments'] }) },
+  })
+}
+
+export function useRemoveLeaseItemForApartment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ leaseId, itemId }: { leaseId: string; itemId: string }) =>
+      leasesApi.removeItem(leaseId, itemId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['apartments'] }) },
+  })
+}
