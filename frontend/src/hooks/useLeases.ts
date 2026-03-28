@@ -40,7 +40,10 @@ export function useAddLeaseItem(tenantId: string) {
   return useMutation({
     mutationFn: ({ leaseId, data }: { leaseId: string; data: LeaseItemPayload }) =>
       leasesApi.addItem(leaseId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tenant', tenantId] }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
+      qc.invalidateQueries({ queryKey: ['apartments'] })
+    },
   })
 }
 
@@ -49,7 +52,10 @@ export function useUpdateLeaseItem(tenantId: string) {
   return useMutation({
     mutationFn: ({ leaseId, itemId, data }: { leaseId: string; itemId: string; data: LeaseItemPayload }) =>
       leasesApi.updateItem(leaseId, itemId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tenant', tenantId] }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
+      qc.invalidateQueries({ queryKey: ['apartments'] })
+    },
   })
 }
 
@@ -58,7 +64,10 @@ export function useRemoveLeaseItem(tenantId: string) {
   return useMutation({
     mutationFn: ({ leaseId, itemId }: { leaseId: string; itemId: string }) =>
       leasesApi.removeItem(leaseId, itemId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tenant', tenantId] }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
+      qc.invalidateQueries({ queryKey: ['apartments'] })
+    },
   })
 }
 
@@ -67,7 +76,10 @@ export function useAddLeaseItemForApartment() {
   return useMutation({
     mutationFn: ({ leaseId, data }: { leaseId: string; data: LeaseItemPayload }) =>
       leasesApi.addItem(leaseId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['apartments'] }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['apartments'] })
+      qc.invalidateQueries({ queryKey: ['tenant'] })
+    },
   })
 }
 
@@ -76,6 +88,9 @@ export function useRemoveLeaseItemForApartment() {
   return useMutation({
     mutationFn: ({ leaseId, itemId }: { leaseId: string; itemId: string }) =>
       leasesApi.removeItem(leaseId, itemId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['apartments'] }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['apartments'] })
+      qc.invalidateQueries({ queryKey: ['tenant'] })
+    },
   })
 }

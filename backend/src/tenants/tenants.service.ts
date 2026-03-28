@@ -31,6 +31,7 @@ export class TenantsService {
         leases: {
           include: {
             apartment: { include: { complex: { select: { id: true, name: true, address: true } } } },
+            items: { orderBy: { createdAt: 'asc' } },
           },
           orderBy: { createdAt: 'desc' },
         },
