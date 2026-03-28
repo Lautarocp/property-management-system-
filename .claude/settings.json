@@ -35,7 +35,9 @@
       "Bash(ssh n1ce@192.168.2.170 \"docker exec pms_postgres psql -U postgres -d pms_db -c \"\"SELECT tablename FROM pg_tables WHERE schemaname = ''public'' ORDER BY tablename;\"\"\")",
       "Bash(ssh n1ce@192.168.2.170 \"docker exec pms_postgres psql -U pms_user -d pms_db -c \"\"SELECT tablename FROM pg_tables WHERE schemaname = ''public'' ORDER BY tablename;\"\"\")",
       "Bash(rsync -av /Users/lautaropomposiello/Documents/Proyecto-departamento/property-management-system-/backend/prisma/schema.prisma /Users/lautaropomposiello/Documents/Proyecto-departamento/property-management-system-/backend/src/payments/ n1ce@192.168.2.170:/home/n1ce/property-management-system/backend/prisma/)",
-      "Bash(ssh n1ce@192.168.2.170 \":*)"
+      "Bash(ssh n1ce@192.168.2.170 \":*)",
+      "Bash(rsync -av /Users/lautaropomposiello/Documents/Proyecto-departamento/property-management-system-/frontend/src/pages/payments/PaymentsPage.tsx n1ce@192.168.2.170:/home/n1ce/property-management-system/frontend/src/pages/payments/PaymentsPage.tsx)",
+      "Bash(ssh n1ce@192.168.2.170 \"docker cp /home/n1ce/property-management-system/frontend/src pms_frontend:/app/src && docker exec pms_frontend sh -c ''''cd /app && npx vite build 2>&1 | tail -5''''\")"
     ]
   }
 }

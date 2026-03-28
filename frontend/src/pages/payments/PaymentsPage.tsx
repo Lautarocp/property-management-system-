@@ -34,7 +34,6 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<{ leaseId: string; dueDate: string; type: string; notes: string }>()
   const selectedLeaseId = watch('leaseId')
-  const selectedLease = activeLeases.find((l: any) => l.id === selectedLeaseId)
 
   const [items, setItems] = useState<{ key: number; name: string; amount: string }[]>([])
   const [newName, setNewName] = useState('')
@@ -47,9 +46,11 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
     const leaseId = e.target.value
     setValue('leaseId', leaseId)
     const lease = activeLeases.find((l: any) => l.id === leaseId)
-    if (lease?.items?.length) {
+    if (lease) {
       let k = keyCounter
-      setItems(lease.items.map((li: any) => ({ key: k++, name: li.name, amount: String(Number(li.amount)) })))
+      const baseItem = { key: k++, name: 'Base Rent', amount: String(Number(lease.monthlyRent)) }
+      const extraItems = (lease.items ?? []).map((li: any) => ({ key: k++, name: li.name, amount: String(Number(li.amount)) }))
+      setItems([baseItem, ...extraItems])
       setKeyCounter(k)
     } else {
       setItems([])
@@ -107,13 +108,8 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
 
       {/* Payment items */}
       <div className="border rounded-lg overflow-hidden">
-        <div className="bg-gray-50 px-4 py-2 flex items-center justify-between">
+        <div className="bg-gray-50 px-4 py-2">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment Breakdown</p>
-          {selectedLease && (
-            <p className="text-xs text-gray-400">
-              Base rent: ${Number(selectedLease.monthlyRent).toLocaleString()}
-            </p>
-          )}
         </div>
 
         <div className="divide-y divide-gray-100">
