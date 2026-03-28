@@ -1,6 +1,7 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, IsEnum, ValidateNested } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { CreatePaymentItemDto } from './create-payment-item.dto';
 
 export enum PaymentTypeEnum {
   RENT = 'RENT',
@@ -15,10 +16,11 @@ export class CreatePaymentDto {
   @IsNotEmpty()
   leaseId!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Type(() => Number)
   @IsNumber()
-  amount!: number;
+  @IsOptional()
+  amount?: number;
 
   @ApiProperty()
   @IsDateString()
@@ -33,4 +35,10 @@ export class CreatePaymentDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({ type: [CreatePaymentItemDto] })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePaymentItemDto)
+  items?: CreatePaymentItemDto[];
 }

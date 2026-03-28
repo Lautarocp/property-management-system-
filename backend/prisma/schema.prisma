@@ -195,6 +195,18 @@ model Payment {
 
   tenantId    String
   tenant      Tenant        @relation(fields: [tenantId], references: [id])
+
+  items       PaymentItem[]
+}
+
+model PaymentItem {
+  id        String   @id @default(cuid())
+  name      String
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 }
 
 model Expense {

@@ -31,7 +31,11 @@
       "Bash(ssh n1ce@192.168.2.170 \"docker cp /home/n1ce/property-management-system/backend/src/apartments/apartments.service.ts pms_backend:/app/src/apartments/apartments.service.ts && docker restart pms_backend 2>&1\")",
       "Bash(ssh n1ce@192.168.2.170 \"docker logs pms_backend --tail 30 2>&1\")",
       "Bash(rsync -av /Users/lautaropomposiello/Documents/Proyecto-departamento/property-management-system-/backend/src/tenants/tenants.service.ts n1ce@192.168.2.170:/home/n1ce/property-management-system/backend/src/tenants/tenants.service.ts)",
-      "Bash(ssh n1ce@192.168.2.170 \"docker cp /home/n1ce/property-management-system/backend/src/tenants/tenants.service.ts pms_backend:/app/src/tenants/tenants.service.ts && docker restart pms_backend\")"
+      "Bash(ssh n1ce@192.168.2.170 \"docker cp /home/n1ce/property-management-system/backend/src/tenants/tenants.service.ts pms_backend:/app/src/tenants/tenants.service.ts && docker restart pms_backend\")",
+      "Bash(ssh n1ce@192.168.2.170 \"docker exec pms_postgres psql -U postgres -d pms_db -c \"\"SELECT tablename FROM pg_tables WHERE schemaname = ''public'' ORDER BY tablename;\"\"\")",
+      "Bash(ssh n1ce@192.168.2.170 \"docker exec pms_postgres psql -U pms_user -d pms_db -c \"\"SELECT tablename FROM pg_tables WHERE schemaname = ''public'' ORDER BY tablename;\"\"\")",
+      "Bash(rsync -av /Users/lautaropomposiello/Documents/Proyecto-departamento/property-management-system-/backend/prisma/schema.prisma /Users/lautaropomposiello/Documents/Proyecto-departamento/property-management-system-/backend/src/payments/ n1ce@192.168.2.170:/home/n1ce/property-management-system/backend/prisma/)",
+      "Bash(ssh n1ce@192.168.2.170 \":*)"
     ]
   }
 }

@@ -1,12 +1,18 @@
 import apiClient from './client'
 import type { Payment } from '@/types'
 
+export interface PaymentItemPayload {
+  name: string
+  amount: number
+}
+
 export interface CreatePaymentPayload {
   leaseId: string
-  amount: number
+  amount?: number
   dueDate: string
   type?: 'RENT' | 'DEPOSIT' | 'LATE_FEE' | 'OTHER'
   notes?: string
+  items?: PaymentItemPayload[]
 }
 
 export const paymentsApi = {
