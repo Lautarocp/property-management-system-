@@ -3,8 +3,8 @@
 ================================================================================
 
 Project Repository: https://github.com/Lautarocp/property-management-system-
-Last Updated:       2026-03-24
-Current Status:     Phases 1–3.5 Complete | Phase 4 Ready to Start
+Last Updated:       2026-03-30
+Current Status:     Phases 1–5 Complete | Phase 6 Ready to Start
 
 ================================================================================
 PHASE STATUS
@@ -14,8 +14,8 @@ PHASE STATUS
   Phase 2: Authentication        ✅ COMPLETE  (2026-03-08)
   Phase 3: Core CRUD             ✅ COMPLETE  (2026-03-24)
   Phase 3.5: Leases & Assignment ✅ COMPLETE  (2026-03-24)
-  Phase 4: Payments              🔮 PLANNED
-  Phase 5: Maintenance & Exp.    🔮 PLANNED
+  Phase 4: Payments              ✅ COMPLETE  (2026-03-29)
+  Phase 5: Maintenance           ✅ COMPLETE  (2026-03-30)
   Phase 6: Dashboard & Reports   🔮 PLANNED
   Phase 7: Production Ready      🔮 PLANNED
 
@@ -45,6 +45,7 @@ TECH STACK
   • PostgreSQL container
   • NestJS hot reload (ts-node-dev)
   • Vite HMR
+  • Multi-origin CORS support (comma-separated env var)
 
 ================================================================================
 COMPLETED DELIVERABLES
@@ -54,13 +55,14 @@ PHASE 1 — FOUNDATION
 ─────────────────────
   ✅ NestJS project with 9 modules (auth, users, complexes, apartments,
      tenants, leases, payments, expenses, maintenance, dashboard)
-  ✅ Prisma schema — 8 models, 8 enums
-  ✅ JWT guards, role guards, decorators (scaffold)
+  ✅ Prisma schema — 8 models, 9 enums
+  ✅ JWT guards, role guards, decorators
   ✅ React + Vite + TailwindCSS frontend boilerplate
   ✅ Zustand auth store + Axios client with interceptors
   ✅ TypeScript types for all entities
   ✅ Docker Compose + Dockerfiles
   ✅ .env.example + .gitignore
+  ✅ Database seed script (prisma/seed.ts)
 
 PHASE 2 — AUTHENTICATION
 ─────────────────────────
@@ -69,18 +71,18 @@ PHASE 2 — AUTHENTICATION
   ✅ GET  /api/auth/me       — current user from token
   ✅ JwtAuthGuard + RolesGuard on all protected routes
   ✅ @CurrentUser() decorator
-  ✅ Login page (email + password, Zod validation, error display)
+  ✅ Login page with show/hide password toggle + Zod validation
   ✅ Register page (firstName, lastName, email, password)
   ✅ ProtectedRoute component (redirects if unauthenticated)
   ✅ Token persisted in localStorage, cleared on 401
 
 PHASE 3 — CORE CRUD
 ─────────────────────
-  ✅ Complexes CRUD (soft delete, apartment count in list)
+  ✅ Complexes CRUD (soft delete, apartment count, card click → apartments)
   ✅ Apartments CRUD (list includes active lease + tenant info)
   ✅ Tenants CRUD (soft delete, notes field, lease history in detail)
-  ✅ Dashboard stats endpoint (complexes, apartments, tenants, leases, payments)
-  ✅ Sidebar layout with navigation (Dashboard/Complexes/Apartments/Tenants)
+  ✅ Dashboard stats endpoint
+  ✅ Sidebar layout with navigation (all modules)
   ✅ Dashboard page — 7 stat cards
   ✅ ComplexesPage — card grid + inline create/edit form
   ✅ ApartmentsPage — table with status badges + inline create/edit form
@@ -89,28 +91,44 @@ PHASE 3 — CORE CRUD
 PHASE 3.5 — TENANT ↔ APARTMENT ASSIGNMENT
 ───────────────────────────────────────────
   ✅ POST   /api/leases              — assign tenant to apartment (atomic tx)
-  ✅ PATCH  /api/leases/:id/terminate — remove tenant, free apartment (atomic tx)
+  ✅ GET    /api/leases/:id/pending-charges — pending MAINTENANCE charges
+  ✅ PATCH  /api/leases/:id/terminate — modal with deposit deduction option
   ✅ PATCH  /api/leases/:id/transfer  — move tenant to different apartment (atomic tx)
   ✅ Assign modal — select tenant, dates, rent, deposit, notes
   ✅ Move modal — dropdown of AVAILABLE apartments only, new lease terms
-  ✅ Remove — confirm dialog, terminates lease
+  ✅ Terminate modal — shows pending charges, deduct from deposit or leave pending
   ✅ Tenant detail panel — personal info, notes (yellow box), current apartment,
      full lease history with status badges
-  ✅ Notes field on Tenant — displayed inline in table and in detail panel
 
-INFRASTRUCTURE FIXES
-─────────────────────
-  ✅ Dockerfiles: npm ci → npm install (no lockfile present)
-  ✅ Backend Dockerfile: OpenSSL installed for Prisma on Alpine
-  ✅ docker-compose: CORS_ORIGIN + VITE_API_URL for remote deployment support
+PHASE 4 — PAYMENTS
+────────────────────
+  ✅ Payment list with type, status, amount, due date, tenant, apartment
+  ✅ PaymentType enum: RENT, DEPOSIT, LATE_FEE, MAINTENANCE, OTHER
+  ✅ Color-coded type badges per payment type
+  ✅ Filter by status and type
+  ✅ Mark payments as paid
+  ✅ maintenanceRequestId on Payment model for MAINTENANCE traceability
 
-BUG FIXES (2026-03-24)
-───────────────────────
-  ✅ Sidebar user info blank after refresh — fixed by persisting user to
-     localStorage, fetching /auth/me via ProtectedRoute on init, and using
-     React Query directly in Sidebar as the source of truth
-  ✅ Sidebar visual — avatar circle with initials, name/email row, role badge,
-     animated skeleton while loading
+PHASE 5 — MAINTENANCE
+──────────────────────
+  ✅ MaintenanceRequest CRUD with apartment + tenant auto-assignment
+  ✅ Priority levels: LOW, MEDIUM, HIGH, URGENT
+  ✅ Status workflow: OPEN → IN_PROGRESS → RESOLVED → CLOSED
+  ✅ Reopen button for CLOSED tickets
+  ✅ Repair cost + tenant charge entered at resolve time (inline form)
+  ✅ Costs displayed in detail panel only after resolve
+  ✅ Inline edit for tenant charge amount post-resolve
+  ✅ Auto-creates MAINTENANCE Payment when tenantChargeAmount > 0
+  ✅ Payment synced (updated/cancelled) when charge is edited
+  ✅ DELETE cancels any linked pending MAINTENANCE payment
+  ✅ repairCost + tenantChargeAmount fields on MaintenanceRequest schema
+
+INFRASTRUCTURE
+──────────────
+  ✅ Dockerfiles: npm ci → npm install; OpenSSL for Prisma on Alpine
+  ✅ CORS multi-origin: comma-separated CORS_ORIGIN parsed in main.ts
+  ✅ docker-compose: CORS_ORIGIN + VITE_API_URL for remote/VPN deployment
+  ✅ Sidebar user info: persisted to localStorage, skeleton while loading
 
 ================================================================================
 DATABASE SCHEMA
@@ -130,27 +148,27 @@ DATABASE SCHEMA
   │                     │ monthlyRent, status, complexId → ApartmentComplex  │
   ├─────────────────────┼────────────────────────────────────────────────────┤
   │ Tenant              │ firstName, lastName, email, phone, dni, birthDate, │
-  │                     │ notes ★NEW, isActive, createdById → User           │
+  │                     │ notes, isActive, createdById → User                │
   ├─────────────────────┼────────────────────────────────────────────────────┤
   │ Lease               │ startDate, endDate, monthlyRent, depositAmount,    │
   │                     │ status, notes, apartmentId, tenantId               │
   ├─────────────────────┼────────────────────────────────────────────────────┤
   │ Payment             │ amount, dueDate, paidDate, status, type,           │
-  │                     │ leaseId, tenantId                                  │
+  │                     │ leaseId, tenantId, maintenanceRequestId            │
   ├─────────────────────┼────────────────────────────────────────────────────┤
-  │ Expense             │ description, amount, date, category, receipt,      │
-  │                     │ complexId                                           │
+  │ Expense             │ description, amount, date, category, complexId     │
   ├─────────────────────┼────────────────────────────────────────────────────┤
-  │ MaintenanceRequest  │ title, description, status, priority, resolvedAt,  │
-  │                     │ apartmentId, tenantId (optional)                   │
+  │ MaintenanceRequest  │ title, description, status, priority, repairCost,  │
+  │                     │ tenantChargeAmount, resolvedAt, notes,             │
+  │                     │ apartmentId, tenantId                              │
   └─────────────────────┴────────────────────────────────────────────────────┘
 
-  Enums (8):
+  Enums (9):
   • Role               → ADMIN, MANAGER
   • ApartmentStatus    → AVAILABLE, OCCUPIED, MAINTENANCE, INACTIVE
   • LeaseStatus        → ACTIVE, EXPIRED, TERMINATED, PENDING
   • PaymentStatus      → PENDING, PAID, OVERDUE, CANCELLED
-  • PaymentType        → RENT, DEPOSIT, LATE_FEE, OTHER
+  • PaymentType        → RENT, DEPOSIT, LATE_FEE, MAINTENANCE, OTHER
   • MaintenanceStatus  → OPEN, IN_PROGRESS, RESOLVED, CLOSED
   • MaintenancePriority→ LOW, MEDIUM, HIGH, URGENT
   • ExpenseCategory    → REPAIRS, UTILITIES, CLEANING, INSURANCE, TAXES,
@@ -164,16 +182,18 @@ FILE STRUCTURE
   ├── auth/                    ✅ register, login, JWT, guards
   ├── users/                   ✅ create, findByEmail, findOne
   ├── complexes/               ✅ full CRUD + soft delete
-  │   └── dto/                 create-complex.dto, update-complex.dto
+  │   └── dto/
   ├── apartments/              ✅ full CRUD + active lease info
-  │   └── dto/                 create-apartment.dto, update-apartment.dto
+  │   └── dto/
   ├── tenants/                 ✅ full CRUD + notes + lease history
-  │   └── dto/                 create-tenant.dto, update-tenant.dto
-  ├── leases/                  ✅ assign, terminate, transfer (atomic)
-  │   └── dto/                 create-lease.dto, transfer-lease.dto
-  ├── payments/                ⏳ stub (Phase 4)
-  ├── expenses/                ⏳ stub (Phase 5)
-  ├── maintenance/             ⏳ stub (Phase 5)
+  │   └── dto/
+  ├── leases/                  ✅ assign, terminate (+ deposit), transfer, pending-charges
+  │   └── dto/
+  ├── payments/                ✅ full CRUD + MAINTENANCE type
+  │   └── dto/
+  ├── expenses/                ⏳ stub
+  ├── maintenance/             ✅ full CRUD + workflow + auto-payment
+  │   └── dto/
   ├── dashboard/               ✅ stats aggregation
   ├── prisma/                  PrismaService
   └── common/                  guards, decorators, filters, interceptors
@@ -181,11 +201,13 @@ FILE STRUCTURE
   frontend/src/
   ├── api/
   │   ├── client.ts            Axios base client + interceptors
-  │   ├── auth.api.ts          login, register, me
+  │   ├── auth.api.ts          ✅
   │   ├── complexes.api.ts     ✅
   │   ├── apartments.api.ts    ✅
   │   ├── tenants.api.ts       ✅
-  │   ├── leases.api.ts        ✅
+  │   ├── leases.api.ts        ✅ (includes getPendingCharges)
+  │   ├── payments.api.ts      ✅
+  │   ├── maintenance.api.ts   ✅
   │   └── dashboard.api.ts     ✅
   ├── hooks/
   │   ├── useAuth.ts           ✅
@@ -193,18 +215,22 @@ FILE STRUCTURE
   │   ├── useApartments.ts     ✅
   │   ├── useTenants.ts        ✅
   │   ├── useLeases.ts         ✅
+  │   ├── usePayments.ts       ✅
+  │   ├── useMaintenance.ts    ✅
   │   └── useDashboard.ts      ✅
   ├── components/
-  │   ├── layout/Layout.tsx    ✅ sidebar layout shell
-  │   ├── layout/Sidebar.tsx   ✅ nav links + user info + sign out
+  │   ├── layout/Layout.tsx    ✅
+  │   ├── layout/Sidebar.tsx   ✅ all nav links + user info
   │   └── shared/ProtectedRoute.tsx
   ├── pages/
-  │   ├── auth/LoginPage.tsx   ✅
-  │   ├── auth/RegisterPage.tsx✅
-  │   ├── DashboardPage.tsx    ✅ 7 stat cards
+  │   ├── auth/LoginPage.tsx           ✅ (show/hide password)
+  │   ├── auth/RegisterPage.tsx        ✅
+  │   ├── DashboardPage.tsx            ✅
   │   ├── complexes/ComplexesPage.tsx  ✅
-  │   ├── apartments/ApartmentsPage.tsx✅ assign/move/remove tenant
-  │   └── tenants/TenantsPage.tsx      ✅ detail panel + notes
+  │   ├── apartments/ApartmentsPage.tsx✅ (terminate modal w/ charges)
+  │   ├── tenants/TenantsPage.tsx      ✅
+  │   ├── payments/PaymentsPage.tsx    ✅ (colored badges)
+  │   └── maintenance/MaintenancePage.tsx ✅ (full workflow + reopen)
   ├── store/auth.store.ts      Zustand + localStorage
   └── types/index.ts           TypeScript interfaces for all models
 
@@ -218,60 +244,57 @@ HOW TO RUN
   $ cd property-management-system-
   $ cp .env.example .env
   $ docker compose up -d --build
-  $ docker compose exec backend npx prisma migrate dev --name init
+  $ docker compose exec backend npx prisma db push
+
+  Seed database (optional):
+  $ docker compose exec backend npx ts-node prisma/seed.ts
 
   Access:
   • Frontend  →  http://localhost:5173
   • Backend   →  http://localhost:3000/api
   • API Docs  →  http://localhost:3000/api/docs
 
-  Create first user:
-  $ curl -X POST http://localhost:3000/api/auth/register \
-    -H "Content-Type: application/json" \
-    -d '{"email":"admin@pms.com","password":"Admin123!",
-         "firstName":"Admin","lastName":"User","role":"ADMIN"}'
-
-  Remote Server (e.g. Debian in local network):
-  ──────────────────────────────────────────────
-  1. In docker-compose.yml replace localhost with server IP:
-       CORS_ORIGIN: http://<IP>:5173
-       VITE_API_URL: http://<IP>:3000/api
-  2. docker compose up -d --build
-  3. docker compose exec -T backend npx prisma db push
+  Remote / VPN Deployment:
+  ──────────────────────────
+  In docker-compose.yml:
+    CORS_ORIGIN: http://<IP>:5173,http://<VPN_IP>:5173
+    VITE_API_URL: http://<IP>:3000/api
+  Then: docker compose up -d --no-deps backend frontend
 
 ================================================================================
 PROJECT STATISTICS
 ================================================================================
 
-  Git Commits:         3
-  Total Files:         ~115 files
-  Backend Files:       ~55 files
-  Frontend Files:      ~35 files
+  Git Commits:         4
+  Total Files:         ~130 files
+  Backend Files:       ~65 files
+  Frontend Files:      ~45 files
   Infrastructure:      6 files
   Documentation:       4 files
 
   Database Models:     8
+  Database Enums:      9
   NestJS Modules:      10
-  Active API Endpoints:21
-  Frontend Pages:      6 (login, register, dashboard, complexes, apartments, tenants)
+  Active API Endpoints:30+
+  Frontend Pages:      8 (login, register, dashboard, complexes, apartments,
+                          tenants, payments, maintenance)
 
-  Phases Complete:     4 of 7
-  Phases Remaining:    3
+  Phases Complete:     6 of 8
+  Phases Remaining:    2
 
 ================================================================================
-NEXT STEPS — PHASE 4: PAYMENTS
+NEXT STEPS — PHASE 6: REPORTING & ANALYTICS
 ================================================================================
 
   Backend:
-  • CreatePaymentDto (leaseId, amount, dueDate, type, notes)
-  • PaymentsService — create, list by lease/tenant, mark as paid
-  • Overdue detection (payments where dueDate < today and status = PENDING)
-  • PATCH /api/payments/:id/pay endpoint
+  • Revenue summaries per complex/apartment (monthly, yearly)
+  • Occupancy rate over time
+  • Expense breakdown by category
+  • Overdue payment detection
 
   Frontend:
-  • PaymentsPage — table with status badges, due dates, paid dates
-  • "Mark as Paid" action per payment row
-  • Payment history in Tenant detail panel
-  • Overdue payments highlighted in red on Dashboard
+  • Chart components (bar/line) for revenue and occupancy
+  • Date range filter on dashboard
+  • CSV/PDF export for payment history
 
 ================================================================================

@@ -11,7 +11,7 @@ A full-stack web application for managing multiple apartment complexes — inclu
 |---|---|
 | Node.js 20+ / NestJS | REST API framework |
 | PostgreSQL 15 | Primary database |
-| Prisma ORM | Database access & migrations |
+| Prisma ORM | Database access & schema management |
 | JWT + Passport | Authentication |
 | class-validator | Request validation |
 | Swagger / OpenAPI | Auto-generated API docs |
@@ -42,7 +42,8 @@ A full-stack web application for managing multiple apartment complexes — inclu
 property-management-system/
 ├── backend/
 │   ├── prisma/
-│   │   └── schema.prisma         # Database schema (8 models, 8 enums)
+│   │   ├── schema.prisma         # Database schema (8 models, 9 enums)
+│   │   └── seed.ts               # Database seed script
 │   ├── src/
 │   │   ├── auth/                 # JWT authentication (register, login)
 │   │   ├── users/                # User management
@@ -50,9 +51,9 @@ property-management-system/
 │   │   ├── apartments/           # Apartment CRUD
 │   │   ├── tenants/              # Tenant CRUD + notes
 │   │   ├── leases/               # Lease management (assign, transfer, terminate)
-│   │   ├── payments/             # Payment tracking (stub)
-│   │   ├── expenses/             # Expense tracking (stub)
-│   │   ├── maintenance/          # Maintenance requests (stub)
+│   │   ├── payments/             # Payment tracking (CRUD, types, mark paid)
+│   │   ├── expenses/             # Expense tracking
+│   │   ├── maintenance/          # Maintenance requests (full CRUD + workflow)
 │   │   ├── dashboard/            # Aggregated stats
 │   │   ├── prisma/               # PrismaService
 │   │   └── common/               # Guards, decorators, filters, interceptors
@@ -66,10 +67,12 @@ property-management-system/
 │   │   │   └── shared/           # ProtectedRoute
 │   │   ├── hooks/                # React Query mutation/query hooks
 │   │   ├── pages/
-│   │   │   ├── auth/             # Login, Register
+│   │   │   ├── auth/             # Login (+ show/hide password), Register
 │   │   │   ├── complexes/        # ComplexesPage
-│   │   │   ├── apartments/       # ApartmentsPage
-│   │   │   ├── tenants/          # TenantsPage
+│   │   │   ├── apartments/       # ApartmentsPage (assign/move/terminate)
+│   │   │   ├── tenants/          # TenantsPage + detail panel
+│   │   │   ├── payments/         # PaymentsPage (colored type badges)
+│   │   │   ├── maintenance/      # MaintenancePage (full workflow)
 │   │   │   └── DashboardPage.tsx
 │   │   ├── store/                # Zustand auth store
 │   │   └── types/                # TypeScript interfaces
@@ -97,7 +100,7 @@ cd property-management-system-
 cp .env.example .env
 ```
 
-> **Important:** If deploying on a remote server, update `VITE_API_URL` and `CORS_ORIGIN` in `docker-compose.yml` to use the server's IP instead of `localhost`.
+> **Remote deployment:** Update `CORS_ORIGIN` and `VITE_API_URL` in `docker-compose.yml` to use the server IP. Multiple origins are supported as a comma-separated list: `http://192.168.1.10:5173,http://100.x.x.x:5173`
 
 ### 2. Start all services
 
@@ -105,13 +108,19 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-### 3. Run database migrations
+### 3. Push database schema
 
 ```bash
-docker compose exec backend npx prisma migrate dev --name init
+docker compose exec backend npx prisma db push
 ```
 
-### 4. Access the app
+### 4. (Optional) Seed with sample data
+
+```bash
+docker compose exec backend npx ts-node prisma/seed.ts
+```
+
+### 5. Access the app
 
 | Service | URL |
 |---|---|
@@ -120,7 +129,7 @@ docker compose exec backend npx prisma migrate dev --name init
 | API Docs (Swagger) | http://localhost:3000/api/docs |
 | PostgreSQL | localhost:5432 |
 
-### 5. Create your first user
+### 6. Create your first user
 
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
@@ -132,26 +141,25 @@ curl -X POST http://localhost:3000/api/auth/register \
 
 ## Remote Server Deployment
 
-To deploy on a machine in your local network (e.g. a Debian server at `192.168.x.x`):
+To deploy on a machine in your local network or via VPN (e.g. Tailscale):
 
-1. Install Docker on the server (the setup script handles this automatically on Debian).
-2. In `docker-compose.yml`, replace both `localhost` references with the server IP:
+1. In `docker-compose.yml`, set both env vars to the server IP:
    ```yaml
    # backend service
-   CORS_ORIGIN: http://<SERVER_IP>:5173
+   CORS_ORIGIN: http://<IP>:5173,http://<TAILSCALE_IP>:5173
 
    # frontend service
-   VITE_API_URL: http://<SERVER_IP>:3000/api
+   VITE_API_URL: http://<IP>:3000/api
    ```
-3. Copy the project and run `docker compose up -d --build`.
-4. Run migrations: `docker compose exec -T backend npx prisma db push`
+2. Run `docker compose up -d --no-deps backend frontend` to recreate containers with new env.
+3. Push schema: `docker compose exec -T backend npx prisma db push`
 
 ---
 
 ## Features
 
 ### Phase 1 — Foundation ✅
-- Project structure, NestJS configuration, Prisma schema, Docker Compose setup.
+Project structure, NestJS configuration, Prisma schema, Docker Compose setup.
 
 ### Phase 2 — Authentication ✅
 - User registration with bcrypt password hashing.
@@ -159,50 +167,67 @@ To deploy on a machine in your local network (e.g. a Debian server at `192.168.x
 - Role-based access control (`ADMIN`, `MANAGER`).
 - Protected routes on the frontend.
 - Login and Register pages.
+- Show/hide password toggle on login.
 
 ### Phase 3 — Core CRUD ✅
 
 #### Apartment Complexes
 - Create, edit, soft-delete complexes.
 - Each complex shows apartment count.
-- Fields: name, address, city, state, zip code, description.
+- Click a complex card to navigate directly to its apartments.
 
 #### Apartments
-- Create, edit, delete apartments with unit number, floor, bedrooms, bathrooms, area, monthly rent.
+- Create, edit, delete apartments.
 - Status: `AVAILABLE`, `OCCUPIED`, `MAINTENANCE`, `INACTIVE`.
 - Filter apartments by complex.
 - Apartment table shows current tenant name.
 
 #### Tenants
 - Create, edit, soft-delete tenants.
-- Fields: name, email, phone, DNI/ID, birth date, **notes**.
-- **Notes** are displayed inline in the table (📝 preview) and in the detail panel.
-- **View** button opens a detail panel showing:
-  - Personal information
-  - Notes (highlighted)
-  - Current apartment & active lease details (rent, start/end dates)
-  - Full lease history with status badges
+- Notes field displayed inline and in detail panel.
+- **View** button opens detail panel: personal info, notes, current lease, full lease history.
 
 #### Dashboard
-- Live stats cards: total complexes, total apartments, available vs occupied, total tenants, active leases, pending payments.
+- Live stats: total complexes, apartments (available/occupied), tenants, active leases, pending payments.
 
-### Phase 3.5 — Tenant ↔ Apartment Assignment ✅
+### Phase 3.5 — Leases ✅
 
 #### Assign Tenant to Apartment
-- **Assign** button on available apartments.
-- Select tenant, set lease dates, monthly rent, deposit, and optional notes.
-- Apartment status automatically changes to `OCCUPIED`.
+- Select tenant, set lease dates, rent, deposit, and notes.
+- Apartment status automatically becomes `OCCUPIED`.
 
 #### Move Tenant to Different Apartment
-- **Move** button on occupied apartments.
 - Dropdown shows only `AVAILABLE` apartments.
-- On confirm:
-  - Old lease is terminated → old apartment becomes `AVAILABLE`.
-  - New lease is created → new apartment becomes `OCCUPIED`.
-  - Entire operation runs in a single database transaction.
+- Atomic transaction: old lease terminated, new lease created.
 
-#### Remove Tenant from Apartment
-- **Remove** button terminates the active lease and marks the apartment `AVAILABLE`.
+#### Terminate Lease
+- Modal shows pending **MAINTENANCE charges** on the lease.
+- Choose to deduct charges from deposit or leave them pending.
+
+### Phase 4 — Payments ✅
+- Payment list with type, status, amount, due date, tenant, and apartment.
+- Color-coded type badges: RENT, DEPOSIT, LATE FEE, MAINTENANCE, OTHER.
+- Filter by status and type.
+- Mark payments as paid.
+- MAINTENANCE payments auto-created when a tenant charge is set on a maintenance ticket.
+
+### Phase 5 — Maintenance ✅
+
+#### Maintenance Requests
+- Create tickets: apartment, title, description, priority, notes.
+- Priority levels: LOW, MEDIUM, HIGH, URGENT.
+- Status workflow: OPEN → IN_PROGRESS → RESOLVED → CLOSED.
+- **Reopen** option for CLOSED tickets.
+
+#### Resolve Flow
+- Repair cost and tenant charge are entered **at resolve time** (not at creation).
+- Confirming RESOLVED opens an inline form for costs.
+- Costs are displayed in the detail panel only after the ticket is resolved.
+
+#### Tenant Charge
+- Tenant charge amount can be **edited** inline from the detail panel at any time after resolving.
+- Setting a charge automatically creates a MAINTENANCE payment linked to the active lease.
+- Changing the charge updates the linked payment; setting it to 0 cancels it.
 
 ---
 
@@ -221,7 +246,6 @@ All endpoints (except `/api/auth/*`) require a `Bearer` token in the `Authorizat
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/complexes` | List all active complexes |
-| GET | `/api/complexes/:id` | Get complex with apartments |
 | POST | `/api/complexes` | Create complex |
 | PATCH | `/api/complexes/:id` | Update complex |
 | DELETE | `/api/complexes/:id` | Soft delete complex |
@@ -229,7 +253,7 @@ All endpoints (except `/api/auth/*`) require a `Bearer` token in the `Authorizat
 ### Apartments
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/apartments` | List apartments (optional `?complexId=`) |
+| GET | `/api/apartments?complexId=` | List apartments |
 | GET | `/api/apartments/:id` | Get apartment with active lease |
 | POST | `/api/apartments` | Create apartment |
 | PATCH | `/api/apartments/:id` | Update apartment |
@@ -238,20 +262,37 @@ All endpoints (except `/api/auth/*`) require a `Bearer` token in the `Authorizat
 ### Tenants
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/tenants` | List active tenants (includes active lease) |
-| GET | `/api/tenants/:id` | Get tenant with full lease history |
+| GET | `/api/tenants` | List active tenants |
+| GET | `/api/tenants/:id` | Get tenant with lease history |
 | POST | `/api/tenants` | Create tenant |
-| PATCH | `/api/tenants/:id` | Update tenant (including notes) |
+| PATCH | `/api/tenants/:id` | Update tenant |
 | DELETE | `/api/tenants/:id` | Soft delete tenant |
 
 ### Leases
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/leases` | List leases (optional `?apartmentId=`) |
-| GET | `/api/leases/:id` | Get lease |
-| POST | `/api/leases` | Create lease (assigns tenant to apartment) |
-| PATCH | `/api/leases/:id/terminate` | Terminate lease, frees apartment |
-| PATCH | `/api/leases/:id/transfer` | Move tenant to a different apartment |
+| GET | `/api/leases?apartmentId=` | List leases |
+| POST | `/api/leases` | Create lease |
+| GET | `/api/leases/:id/pending-charges` | Get pending MAINTENANCE charges |
+| PATCH | `/api/leases/:id/terminate` | Terminate lease (accepts `{ deductFromDeposit }`) |
+| PATCH | `/api/leases/:id/transfer` | Move tenant to different apartment |
+
+### Payments
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/payments` | List payments |
+| POST | `/api/payments` | Create payment |
+| PATCH | `/api/payments/:id` | Update payment |
+| DELETE | `/api/payments/:id` | Delete payment |
+
+### Maintenance
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/maintenance?apartmentId=&status=` | List requests |
+| GET | `/api/maintenance/:id` | Get request detail |
+| POST | `/api/maintenance` | Create request |
+| PATCH | `/api/maintenance/:id` | Update request (status, costs) |
+| DELETE | `/api/maintenance/:id` | Delete request |
 
 ### Dashboard
 | Method | Endpoint | Description |
@@ -269,25 +310,26 @@ User ──< ApartmentComplex ──< Apartment ──< Lease >── Tenant
                                     └──< MaintenanceRequest >── Tenant
                           └──< Expense
          Lease ──< Payment >── Tenant
+         Payment ──> MaintenanceRequest
 ```
 
 ### Models
 | Model | Key Fields |
 |---|---|
-| `User` | email, password (hashed), firstName, lastName, role (ADMIN/MANAGER) |
-| `ApartmentComplex` | name, address, city, state, zipCode, description, isActive |
+| `User` | email, password (hashed), firstName, lastName, role |
+| `ApartmentComplex` | name, address, city, state, zipCode, isActive |
 | `Apartment` | number, floor, bedrooms, bathrooms, area, monthlyRent, status |
-| `Tenant` | firstName, lastName, email, phone, dni, birthDate, **notes**, isActive |
+| `Tenant` | firstName, lastName, email, phone, dni, birthDate, notes, isActive |
 | `Lease` | startDate, endDate, monthlyRent, depositAmount, status, notes |
-| `Payment` | amount, dueDate, paidDate, status, type |
+| `Payment` | amount, dueDate, paidDate, status, type, maintenanceRequestId |
 | `Expense` | description, amount, date, category |
-| `MaintenanceRequest` | title, description, status, priority |
+| `MaintenanceRequest` | title, description, status, priority, repairCost, tenantChargeAmount, resolvedAt |
 
 ### Enums
 - `ApartmentStatus`: `AVAILABLE` · `OCCUPIED` · `MAINTENANCE` · `INACTIVE`
 - `LeaseStatus`: `ACTIVE` · `EXPIRED` · `TERMINATED` · `PENDING`
 - `PaymentStatus`: `PENDING` · `PAID` · `OVERDUE` · `CANCELLED`
-- `PaymentType`: `RENT` · `DEPOSIT` · `LATE_FEE` · `OTHER`
+- `PaymentType`: `RENT` · `DEPOSIT` · `LATE_FEE` · `MAINTENANCE` · `OTHER`
 - `MaintenanceStatus`: `OPEN` · `IN_PROGRESS` · `RESOLVED` · `CLOSED`
 - `MaintenancePriority`: `LOW` · `MEDIUM` · `HIGH` · `URGENT`
 - `ExpenseCategory`: `REPAIRS` · `UTILITIES` · `CLEANING` · `INSURANCE` · `TAXES` · `STAFF` · `OTHER`
@@ -303,7 +345,7 @@ User ──< ApartmentComplex ──< Apartment ──< Lease >── Tenant
 | `JWT_SECRET` | JWT signing secret | *(change in production)* |
 | `JWT_EXPIRES_IN` | Token lifetime | `7d` |
 | `NODE_ENV` | Environment | `development` |
-| `CORS_ORIGIN` | Allowed frontend origin | `http://localhost:5173` |
+| `CORS_ORIGIN` | Allowed frontend origins (comma-separated) | `http://localhost:5173` |
 
 ---
 
@@ -315,8 +357,8 @@ User ──< ApartmentComplex ──< Apartment ──< Lease >── Tenant
 | 2 — Authentication | ✅ Done | JWT auth, roles, frontend pages |
 | 3 — Core CRUD | ✅ Done | Complexes, apartments, tenants, dashboard |
 | 3.5 — Leases | ✅ Done | Assign, move, terminate tenants |
-| 4 — Payments | 🔮 Planned | Rent tracking, overdue detection |
-| 5 — Maintenance & Expenses | 🔮 Planned | Tickets, expense categories |
+| 4 — Payments | ✅ Done | Payment tracking with types and MAINTENANCE integration |
+| 5 — Maintenance | ✅ Done | Full ticket workflow, costs, tenant charges |
 | 6 — Reporting | 🔮 Planned | Charts, analytics, exports |
 | 7 — Production | 🔮 Planned | Tests, hardening, CI/CD |
 
@@ -326,7 +368,7 @@ User ──< ApartmentComplex ──< Apartment ──< Lease >── Tenant
 
 - Change `JWT_SECRET` before going to production.
 - Use strong database passwords.
-- Set `CORS_ORIGIN` to the exact frontend URL only.
+- Set `CORS_ORIGIN` to the exact frontend URL(s) only.
 - Enable HTTPS in production.
 - Keep dependencies updated.
 

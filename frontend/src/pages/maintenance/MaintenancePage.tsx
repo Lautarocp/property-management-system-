@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useMaintenance, useCreateMaintenance, useUpdateMaintenance, useDeleteMaintenance } from '@/hooks/useMaintenance'
 import { useApartments } from '@/hooks/useApartments'
 import type { MaintenanceRequest } from '@/types'
-import type { CreateMaintenancePayload, UpdateMaintenancePayload } from '@/api/maintenance.api'
+import type { CreateMaintenancePayload } from '@/api/maintenance.api'
 
 const STATUS_COLORS: Record<MaintenanceRequest['status'], string> = {
   OPEN: 'bg-red-100 text-red-700',
@@ -20,20 +20,16 @@ const PRIORITY_COLORS: Record<MaintenanceRequest['priority'], string> = {
 }
 
 function MaintenanceForm({
-  defaultValues,
   onSubmit,
   onCancel,
   isLoading,
 }: {
-  defaultValues?: Partial<CreateMaintenancePayload>
   onSubmit: (data: CreateMaintenancePayload) => void
   onCancel: () => void
   isLoading: boolean
 }) {
   const { data: apartments } = useApartments()
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<CreateMaintenancePayload>({ defaultValues })
-  const repairCost = watch('repairCost')
-  const tenantCharge = watch('tenantChargeAmount')
+  const { register, handleSubmit, formState: { errors } } = useForm<CreateMaintenancePayload>()
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -63,7 +59,7 @@ function MaintenanceForm({
           {errors.description && <p className="text-red-500 text-xs mt-1">Required</p>}
         </div>
 
-        <div>
+        <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
           <select {...register('priority')} className="w-full border rounded-lg px-3 py-2 text-sm">
             <option value="LOW">Low</option>
@@ -71,21 +67,6 @@ function MaintenanceForm({
             <option value="HIGH">High</option>
             <option value="URGENT">Urgent</option>
           </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Repair Cost ($)</label>
-          <input type="number" step="0.01" min="0" {...register('repairCost', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="0.00" />
-        </div>
-
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tenant Charge ($)</label>
-          <input type="number" step="0.01" min="0" {...register('tenantChargeAmount', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="0.00" />
-          {repairCost > 0 && tenantCharge > 0 && (
-            <p className="text-xs text-gray-500 mt-1">
-              Tenant covers {((tenantCharge / repairCost) * 100).toFixed(0)}% of the repair cost
-            </p>
-          )}
         </div>
 
         <div className="col-span-2">
@@ -106,12 +87,37 @@ function MaintenanceForm({
   )
 }
 
-function DetailPanel({ request, onClose, onStatusChange }: {
-  request: any
-  onClose: () => void
-  onStatusChange: (status: string) => void
-}) {
+function DetailPanel({ request, onClose }: { request: any; onClose: () => void }) {
   const updateMaintenance = useUpdateMaintenance()
+
+  // Resolve form state
+  const [resolvingForm, setResolvingForm] = useState(false)
+  const [repairCost, setRepairCost] = useState('')
+  const [tenantCharge, setTenantCharge] = useState('')
+
+  // Inline edit for costs after resolved
+  const [editingCharge, setEditingCharge] = useState(false)
+  const [chargeValue, setChargeValue] = useState('')
+
+  const isResolved = request.status === 'RESOLVED' || request.status === 'CLOSED'
+
+  const handleResolve = () => {
+    const cost = Number(repairCost) || undefined
+    const charge = Number(tenantCharge) || undefined
+    updateMaintenance.mutate(
+      { id: request.id, data: { status: 'RESOLVED', repairCost: cost, tenantChargeAmount: charge } },
+      { onSuccess: onClose }
+    )
+  }
+
+  const saveCharge = () => {
+    const amount = Number(chargeValue)
+    if (isNaN(amount) || amount < 0) return
+    updateMaintenance.mutate(
+      { id: request.id, data: { tenantChargeAmount: amount } },
+      { onSuccess: () => { setEditingCharge(false); setChargeValue('') } }
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
@@ -148,25 +154,51 @@ function DetailPanel({ request, onClose, onStatusChange }: {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-3">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Repair Cost</p>
-              <p className="text-lg font-bold text-gray-900">
-                {request.repairCost != null ? `$${Number(request.repairCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tenant Charge</p>
-              <p className="text-lg font-bold text-indigo-600">
-                {request.tenantChargeAmount != null ? `$${Number(request.tenantChargeAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
-              </p>
-              {request.repairCost > 0 && request.tenantChargeAmount > 0 && (
-                <p className="text-xs text-gray-400">
-                  {((Number(request.tenantChargeAmount) / Number(request.repairCost)) * 100).toFixed(0)}% of total
+          {/* Costs — only shown once resolved */}
+          {isResolved && (
+            <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-3">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Repair Cost</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {request.repairCost != null ? `$${Number(request.repairCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
                 </p>
-              )}
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tenant Charge</p>
+                  {!editingCharge && (
+                    <button onClick={() => { setEditingCharge(true); setChargeValue(String(Number(request.tenantChargeAmount ?? 0))) }} className="text-xs text-indigo-600 hover:underline">Edit</button>
+                  )}
+                </div>
+                {editingCharge ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="number" step="0.01" min="0"
+                      value={chargeValue}
+                      onChange={e => setChargeValue(e.target.value)}
+                      className="flex-1 border rounded-lg px-2 py-1 text-sm"
+                      autoFocus
+                    />
+                    <button onClick={saveCharge} disabled={updateMaintenance.isPending} className="px-3 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                      {updateMaintenance.isPending ? '...' : 'Save'}
+                    </button>
+                    <button onClick={() => setEditingCharge(false)} className="px-2 py-1 text-xs text-gray-500 border rounded-lg hover:bg-gray-50">✕</button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-lg font-bold text-indigo-600">
+                      {request.tenantChargeAmount != null ? `$${Number(request.tenantChargeAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
+                    </p>
+                    {Number(request.repairCost) > 0 && Number(request.tenantChargeAmount) > 0 && (
+                      <p className="text-xs text-gray-400">
+                        {((Number(request.tenantChargeAmount) / Number(request.repairCost)) * 100).toFixed(0)}% of total
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {request.notes && (
             <div>
@@ -187,23 +219,96 @@ function DetailPanel({ request, onClose, onStatusChange }: {
             </div>
           )}
 
+          {/* Status actions */}
+          {request.status === 'CLOSED' && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Update Status</p>
+              <button
+                onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: 'OPEN' } }, { onSuccess: onClose })}
+                disabled={updateMaintenance.isPending}
+                className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                Reopen
+              </button>
+            </div>
+          )}
           {request.status !== 'CLOSED' && (
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Update Status</p>
-              <div className="flex gap-2 flex-wrap">
-                {(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] as const).filter(s => s !== request.status).map(s => (
+
+              {/* Resolve form — enters costs before resolving */}
+              {resolvingForm ? (
+                <div className="bg-green-50 rounded-lg p-3 space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Enter repair costs to resolve</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Repair Cost ($)</label>
+                      <input
+                        type="number" step="0.01" min="0"
+                        value={repairCost}
+                        onChange={e => setRepairCost(e.target.value)}
+                        className="w-full border rounded-lg px-2 py-1 text-sm"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Tenant Charge ($)</label>
+                      <input
+                        type="number" step="0.01" min="0"
+                        value={tenantCharge}
+                        onChange={e => setTenantCharge(e.target.value)}
+                        className="w-full border rounded-lg px-2 py-1 text-sm"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  {Number(repairCost) > 0 && Number(tenantCharge) > 0 && (
+                    <p className="text-xs text-gray-500">
+                      Tenant covers {((Number(tenantCharge) / Number(repairCost)) * 100).toFixed(0)}% of repair cost
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleResolve}
+                      disabled={updateMaintenance.isPending}
+                      className="px-4 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {updateMaintenance.isPending ? 'Saving...' : 'Confirm Resolved'}
+                    </button>
+                    <button onClick={() => setResolvingForm(false)} className="px-3 py-1.5 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2 flex-wrap">
+                  {(['OPEN', 'IN_PROGRESS'] as const).filter(s => s !== request.status).map(s => (
+                    <button
+                      key={s}
+                      onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: s } }, { onSuccess: onClose })}
+                      disabled={updateMaintenance.isPending}
+                      className="px-3 py-1 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {s.replace('_', ' ')}
+                    </button>
+                  ))}
+                  {request.status !== 'RESOLVED' && (
+                    <button
+                      onClick={() => setResolvingForm(true)}
+                      className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      RESOLVED
+                    </button>
+                  )}
                   <button
-                    key={s}
-                    onClick={() => {
-                      updateMaintenance.mutate({ id: request.id, data: { status: s } }, { onSuccess: onClose })
-                    }}
+                    onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: 'CLOSED' } }, { onSuccess: onClose })}
                     disabled={updateMaintenance.isPending}
                     className="px-3 py-1 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-50"
                   >
-                    {s.replace('_', ' ')}
+                    CLOSED
                   </button>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -238,33 +343,20 @@ export function MaintenancePage() {
           <h2 className="text-2xl font-bold text-gray-900">Maintenance</h2>
           <p className="text-gray-500 text-sm mt-1">{filtered.length} requests</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-        >
+        <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
           + New Request
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-6">
-        <select
-          value={filterApt}
-          onChange={e => setFilterApt(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm text-gray-700"
-        >
+        <select value={filterApt} onChange={e => setFilterApt(e.target.value)} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
           <option value="">All apartments</option>
           {(apartments as any[])?.map((apt: any) => (
-            <option key={apt.id} value={apt.id}>
-              {apt.complex?.name} — Unit {apt.number}
-            </option>
+            <option key={apt.id} value={apt.id}>{apt.complex?.name} — Unit {apt.number}</option>
           ))}
         </select>
-        <select
-          value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm text-gray-700"
-        >
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
           <option value="">All statuses</option>
           <option value="OPEN">Open</option>
           <option value="IN_PROGRESS">In Progress</option>
@@ -317,10 +409,10 @@ export function MaintenancePage() {
                 </div>
 
                 <div className="text-right shrink-0">
-                  {req.repairCost != null && (
+                  {(req.status === 'RESOLVED' || req.status === 'CLOSED') && req.repairCost != null && (
                     <p className="text-sm font-semibold text-gray-900">${Number(req.repairCost).toLocaleString()}</p>
                   )}
-                  {req.tenantChargeAmount != null && (
+                  {(req.status === 'RESOLVED' || req.status === 'CLOSED') && req.tenantChargeAmount != null && (
                     <p className="text-xs text-indigo-600">Tenant: ${Number(req.tenantChargeAmount).toLocaleString()}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">{new Date(req.createdAt).toLocaleDateString()}</p>
@@ -341,7 +433,6 @@ export function MaintenancePage() {
         <DetailPanel
           request={viewing}
           onClose={() => setViewing(null)}
-          onStatusChange={() => setViewing(null)}
         />
       )}
     </div>

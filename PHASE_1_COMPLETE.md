@@ -40,7 +40,7 @@
 - `UsersService` — create, findByEmail, findOne (password excluded from responses)
 
 ### Frontend
-- Login page with Zod validation and error display
+- Login page with Zod validation, error display, and show/hide password toggle
 - Register page with firstName, lastName, email, password fields
 - `useLogin` / `useRegister` / `useLogout` React Query mutation hooks
 - `ProtectedRoute` component — redirects unauthenticated users to `/login`
@@ -71,7 +71,7 @@
 ### Backend — Tenants Module
 - `CreateTenantDto` / `UpdateTenantDto` — includes `notes` field
 - `GET /api/tenants` — list active tenants with their current active lease + apartment
-- `GET /api/tenants/:id` — full detail with complete lease history (all statuses)
+- `GET /api/tenants/:id` — full detail with complete lease history
 - `POST /api/tenants` — create (createdById set from JWT user)
 - `PATCH /api/tenants/:id` — update (supports notes)
 - `DELETE /api/tenants/:id` — soft delete (`isActive: false`)
@@ -83,12 +83,12 @@
 
 ### Frontend
 - `Layout` component with persistent `Sidebar` navigation
-- Sidebar links: Dashboard · Complexes · Apartments · Tenants
+- Sidebar links: Dashboard · Complexes · Apartments · Tenants · Payments · Maintenance
 - Sidebar displays logged-in user name, email, role badge, and sign-out button
 - `DashboardPage` — 7 stat cards with live data from `/api/dashboard/stats`
-- `ComplexesPage` — card grid, inline create/edit form, delete
+- `ComplexesPage` — card grid, inline create/edit form, delete; card click navigates to filtered apartments via router state
 - `ApartmentsPage` — table view with status badges, inline create/edit form
-- `TenantsPage` — table with apartment column and notes preview (📝), inline create/edit form
+- `TenantsPage` — table with apartment column and notes preview, inline create/edit form
 
 ### Schema Change
 - Added `notes String?` field to `Tenant` model
@@ -103,53 +103,87 @@
 - `TransferLeaseDto` — newApartmentId, startDate, endDate, monthlyRent, depositAmount
 - `GET /api/leases?apartmentId=` — list leases with tenant and apartment info
 - `GET /api/leases/:id` — lease detail
-- `POST /api/leases` — assign tenant to apartment:
-  - Validates no existing active lease on target apartment
-  - Creates lease with `ACTIVE` status
-  - Updates apartment status → `OCCUPIED`
-  - Runs in a single DB transaction
-- `PATCH /api/leases/:id/terminate` — remove tenant from apartment:
-  - Sets lease status → `TERMINATED`
-  - Updates apartment status → `AVAILABLE`
-  - Runs in a single DB transaction
-- `PATCH /api/leases/:id/transfer` — move tenant to a different apartment:
-  - Validates source lease is `ACTIVE`
-  - Validates target apartment exists and is `AVAILABLE`
-  - Validates no active lease on target
-  - In one atomic transaction:
-    1. Creates new `ACTIVE` lease on target apartment
-    2. Updates target apartment → `OCCUPIED`
-    3. Terminates old lease
-    4. Updates old apartment → `AVAILABLE`
+- `GET /api/leases/:id/pending-charges` — returns pending MAINTENANCE payments on a lease
+- `POST /api/leases` — assign tenant to apartment (atomic transaction)
+- `PATCH /api/leases/:id/terminate` — remove tenant, free apartment; accepts `{ deductFromDeposit }`:
+  - If `deductFromDeposit: true`: marks all pending MAINTENANCE payments as PAID with a deposit note
+  - If `false`: leaves pending charges as-is
+- `PATCH /api/leases/:id/transfer` — atomic move: creates new lease, terminates old one, swaps apartment statuses
 
 ### Frontend — ApartmentsPage Enhancements
-- **Tenant column** — shows current tenant name if occupied
-- **Assign button** (green) — available apartments only → opens modal:
-  - Tenant dropdown, start/end dates, monthly rent, deposit, optional notes
-- **Move button** (purple) — occupied apartments only → opens modal:
-  - Dropdown filtered to `AVAILABLE` apartments only
-  - New start/end dates, rent, deposit
-  - Shows "no available apartments" message if none exist
-- **Remove button** (orange) — occupied apartments only → confirms and terminates lease
+- **Assign button** — available apartments → modal with tenant dropdown, dates, rent, deposit, notes
+- **Move button** — occupied apartments → modal with AVAILABLE apartments only
+- **Terminate button** — opens `TerminateModal`:
+  - Fetches pending MAINTENANCE charges via `GET /api/leases/:id/pending-charges`
+  - Shows each charge with amount
+  - Two actions: "Terminate & deduct from deposit" / "Terminate & leave charges pending"
 
 ### Frontend — TenantsPage Enhancements
-- **View button** (indigo) → opens `TenantDetailPanel` side modal:
-  - Personal information section (phone, DNI, birth date, member since)
-  - **Notes section** — yellow highlight box if present, italic placeholder if empty
-  - **Current Apartment** section — apartment number, floor, complex name, rent, lease dates
-  - **Lease History** section — all past leases with status badges (TERMINATED, EXPIRED, etc.)
-  - Edit button inside panel → closes panel and opens inline edit form
-- **Notes preview** in table row — truncated 📝 snippet if notes exist
-- **Notes textarea** in create/edit form
+- **View button** → opens `TenantDetailPanel`:
+  - Personal info, notes (yellow highlight), current apartment, full lease history with status badges
+- Notes preview in table row
+- Notes textarea in create/edit form
+
+---
+
+## Phase 4: Payments ✅
+**Completed:** 2026-03-29
+
+### Backend — Payments Module
+- Full CRUD: list (with filters), create, update, delete
+- `PaymentType` enum extended with `MAINTENANCE` value
+- `Payment` model has `maintenanceRequestId String?` for traceability
+
+### Frontend — PaymentsPage
+- Payments table: type, status, amount, due date, tenant name, apartment
+- **Color-coded type badges**: RENT (blue), DEPOSIT (green), LATE FEE (orange), MAINTENANCE (purple), OTHER (gray)
+- Filter by payment status and type
+- Mark payments as paid
+
+---
+
+## Phase 5: Maintenance ✅
+**Completed:** 2026-03-30
+
+### Schema Changes
+- Added `repairCost Decimal?` and `tenantChargeAmount Decimal?` to `MaintenanceRequest`
+- Added `maintenanceRequestId String?` to `Payment` model
+
+### Backend — Maintenance Module
+- `CreateMaintenanceDto` — title, description, apartmentId, optional priority/notes
+- `UpdateMaintenanceDto` — all fields optional including status, repairCost, tenantChargeAmount
+- `GET /api/maintenance?apartmentId=&status=` — list with filters
+- `GET /api/maintenance/:id` — detail with apartment and tenant
+- `POST /api/maintenance` — create; auto-assigns tenant from active lease
+- `PATCH /api/maintenance/:id` — update:
+  - If `tenantChargeAmount` changes: creates, updates, or cancels linked MAINTENANCE payment
+  - If status set to `RESOLVED`: sets `resolvedAt` timestamp
+- `DELETE /api/maintenance/:id` — delete; cancels any linked pending MAINTENANCE payment
+
+### Frontend — MaintenancePage
+- Create form: apartment, title, description, priority, notes (no costs at creation)
+- Card list showing status/priority badges, tenant name, repair cost and tenant charge (resolved/closed only)
+- **DetailPanel**:
+  - Status/priority badges, apartment, description, tenant
+  - Costs section (repair cost + tenant charge) shown only when RESOLVED or CLOSED
+  - Tenant charge has inline **Edit** button for updating amount post-resolve
+  - Status buttons for non-closed tickets: OPEN, IN_PROGRESS, RESOLVED (inline form), CLOSED
+  - **RESOLVED** button opens an inline form asking for repair cost + tenant charge before confirming
+  - **Reopen** button shown for CLOSED tickets → sets status back to OPEN
+
+### Lease Termination Integration
+- Terminate modal fetches pending maintenance charges before confirming
+- User can choose to deduct charges from deposit or leave them pending
 
 ---
 
 ## Infrastructure Fixes
 **Completed:** 2026-03-24
 
-- `backend/Dockerfile` — changed `npm ci` → `npm install`, added `RUN apk add --no-cache openssl` (required by Prisma on Alpine)
+- `backend/Dockerfile` — changed `npm ci` → `npm install`, added `RUN apk add --no-cache openssl`
 - `frontend/Dockerfile` — changed `npm ci` → `npm install`
-- `docker-compose.yml` — added `CORS_ORIGIN` env var for remote deployments, `VITE_API_URL` set to server IP
+- `docker-compose.yml` — `CORS_ORIGIN` supports multiple comma-separated origins (parsed in `main.ts`)
+- `backend/src/main.ts` — CORS callback reads `CORS_ORIGIN` env var, splits on comma, allows all matching origins
 
 ---
 
@@ -157,14 +191,15 @@
 **Completed:** 2026-03-24
 
 ### Sidebar User Info Not Showing After Refresh
-- **Root cause:** Zustand store initializes `user: null` on every page load. Token survived in `localStorage` so `isAuthenticated` was true, but `user` was always null after a browser refresh.
-- **Fix 1** — `frontend/src/store/auth.store.ts`: Persist `user` object to `localStorage` on `login()` and restore it via `loadUser()` on store init. Clear on `logout()`.
-- **Fix 2** — `frontend/src/components/shared/ProtectedRoute.tsx`: Added `useEffect` that calls `GET /api/auth/me` when `isAuthenticated` is true but `user` is null, then stores the result via `setUser`.
-- **Fix 3** — `frontend/src/components/layout/Sidebar.tsx`: Sidebar now fetches the current user directly via React Query (`queryKey: ['me']`, `staleTime: Infinity`) instead of relying solely on the Zustand store. This guarantees the user info displays correctly on both first login and after any page refresh.
+- **Root cause:** Zustand store initializes `user: null` on every page load.
+- **Fix:** Persist `user` to `localStorage`, restore via `loadUser()` on init. `ProtectedRoute` fetches `/auth/me` when token exists but `user` is null. Sidebar queries via React Query as source of truth.
 
 ### Sidebar Visual Improvement
-- Replaced plain text user block with a row layout: circular avatar with user initials, name + email (truncated), role badge pushed to the right.
-- Added animated pulse skeleton shown while user data is loading instead of blank/broken layout.
+- Circular avatar with initials, name/email row, role badge, animated skeleton while loading.
+
+### CORS Multi-Origin
+- Root cause: `docker-compose.yml` hardcoded a single `CORS_ORIGIN` value, blocking requests from VPN/Tailscale IP.
+- Fix: comma-separated origins in docker-compose, callback-based CORS check in `main.ts`.
 
 ---
 
@@ -176,8 +211,8 @@
 | 2 — Authentication | ✅ Complete | 2026-03-08 |
 | 3 — Core CRUD | ✅ Complete | 2026-03-24 |
 | 3.5 — Leases & Assignment | ✅ Complete | 2026-03-24 |
-| 4 — Payments | 🔮 Planned | — |
-| 5 — Maintenance & Expenses | 🔮 Planned | — |
+| 4 — Payments | ✅ Complete | 2026-03-29 |
+| 5 — Maintenance | ✅ Complete | 2026-03-30 |
 | 6 — Dashboard & Reporting | 🔮 Planned | — |
 | 7 — Production Ready | 🔮 Planned | — |
 
@@ -225,8 +260,26 @@
 | GET | `/api/leases?apartmentId=` |
 | GET | `/api/leases/:id` |
 | POST | `/api/leases` |
+| GET | `/api/leases/:id/pending-charges` |
 | PATCH | `/api/leases/:id/terminate` |
 | PATCH | `/api/leases/:id/transfer` |
+
+### Payments
+| Method | Path |
+|---|---|
+| GET | `/api/payments` |
+| POST | `/api/payments` |
+| PATCH | `/api/payments/:id` |
+| DELETE | `/api/payments/:id` |
+
+### Maintenance
+| Method | Path |
+|---|---|
+| GET | `/api/maintenance?apartmentId=&status=` |
+| GET | `/api/maintenance/:id` |
+| POST | `/api/maintenance` |
+| PATCH | `/api/maintenance/:id` |
+| DELETE | `/api/maintenance/:id` |
 
 ### Dashboard
 | Method | Path |

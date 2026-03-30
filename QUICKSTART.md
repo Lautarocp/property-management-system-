@@ -1,192 +1,166 @@
 # PMS Quick Start Guide
 
-## ⚡ 5-Minute Setup with Docker Compose
+## 5-Minute Setup with Docker Compose
 
-### Step 1: Start the Services
+### Step 1: Clone & configure
 ```bash
-cd /home/n1ce/pms-app
-docker-compose up
+git clone https://github.com/Lautarocp/property-management-system-.git
+cd property-management-system-
+cp .env.example .env
 ```
 
-This will start:
+### Step 2: Start all services
+```bash
+docker compose up -d --build
+```
+
+This starts:
 - PostgreSQL database (port 5432)
 - NestJS backend (port 3000)
 - React frontend (port 5173)
 
-### Step 2: Run Database Migrations
-In a new terminal:
+### Step 3: Push database schema
 ```bash
-cd /home/n1ce/pms-app/backend
-npx prisma migrate dev --name init
+docker compose exec backend npx prisma db push
 ```
 
-### Step 3: Open the Application
-- **Frontend**: http://localhost:5173
-- **API Docs**: http://localhost:3000/api/docs
-- **Database**: localhost:5432 (pms_user / supersecretpassword)
-
----
-
-## 🛠️ Local Development Setup
-
-### Backend Setup
+### Step 4: (Optional) Seed with sample data
 ```bash
-cd /home/n1ce/pms-app/backend
-
-# Dependencies already installed!
-# npm install
-
-# Generate Prisma client
-npx prisma generate
-
-# Run migrations
-npx prisma migrate dev --name init
-
-# Start development server
-npm run start:dev
+docker compose exec backend npx ts-node prisma/seed.ts
 ```
 
-### Frontend Setup
+### Step 5: Open the app
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| API Docs | http://localhost:3000/api/docs |
+
+### Step 6: Create your first user
 ```bash
-cd /home/n1ce/pms-app/frontend
-
-# Dependencies already installed!
-# npm install
-
-# Start development server
-npm run dev
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@pms.com","password":"Admin123!","firstName":"Admin","lastName":"User","role":"ADMIN"}'
 ```
 
 ---
 
-## 📁 Project Locations
+## Remote / VPN Deployment
 
+To access the app from another machine or via Tailscale, update `docker-compose.yml`:
+
+```yaml
+# backend service
+CORS_ORIGIN: http://192.168.1.10:5173,http://100.x.x.x:5173
+
+# frontend service
+VITE_API_URL: http://192.168.1.10:3000/api
 ```
-/home/n1ce/pms-app/
-├── backend/           # NestJS API
-├── frontend/          # React app
-├── docker-compose.yml # Full stack config
-└── README.md          # Full documentation
+
+Then recreate the containers:
+```bash
+docker compose up -d --no-deps backend frontend
 ```
+
+Multiple origins are supported via comma-separated values.
 
 ---
 
-## 🔧 Useful Commands
-
-### Backend
-```bash
-cd backend
-npm run start:dev      # Development with hot reload
-npm run build          # Build for production
-npm run test           # Run tests
-npm run lint           # ESLint + Prettier
-```
-
-### Frontend
-```bash
-cd frontend
-npm run dev            # Development server
-npm run build          # Build for production
-npm run type-check     # TypeScript check
-npm run lint           # ESLint check
-```
-
-### Database
-```bash
-# View database
-npx prisma studio
-
-# Create migration
-npx prisma migrate dev --name <description>
-
-# Reset database
-npx prisma migrate reset
-```
-
----
-
-## 📊 Project Status
-
-**Phase 1: Foundation** ✅ COMPLETE
-
-What's ready:
-- ✅ Project structure
-- ✅ Database schema (Prisma)
-- ✅ Module stubs (9 modules)
-- ✅ Authentication infrastructure
-- ✅ Docker setup
-- ✅ Frontend setup
-
-What's next:
-- [ ] Phase 2: Authentication (login/register)
-- [ ] Phase 3: CRUD operations
-- [ ] Phase 4: Leases & Payments
-- [ ] Phase 5: Maintenance & Expenses
-- [ ] Phase 6: Dashboard & Analytics
-- [ ] Phase 7: Production hardening
-
----
-
-## 🔑 Default Credentials
+## Default Credentials
 
 Database:
 - User: `pms_user`
 - Password: `supersecretpassword`
 - Database: `pms_db`
 
-JWT Secret (change in production):
+App login (after registering): use the email/password you set during registration.
+
+---
+
+## Useful Commands
+
+### Docker
+```bash
+docker compose up -d --build          # Start all services (build images)
+docker compose up -d --no-deps backend frontend  # Recreate only backend + frontend
+docker compose logs -f backend        # Watch backend logs
+docker compose exec backend sh        # Shell into backend container
 ```
-your-super-secret-jwt-key-change-this-in-production
+
+### Database
+```bash
+docker compose exec backend npx prisma db push      # Push schema to DB
+docker compose exec backend npx prisma generate     # Regenerate Prisma client
+docker compose exec backend npx ts-node prisma/seed.ts  # Seed data
+docker compose exec backend npx prisma studio       # Open Prisma Studio (port 5555)
+```
+
+### Backend (inside container or locally)
+```bash
+npm run start:dev    # Dev server with hot reload
+npm run build        # Build for production
+npm run lint         # ESLint + Prettier
+```
+
+### Frontend (inside container or locally)
+```bash
+npm run dev          # Dev server with HMR
+npm run build        # Build for production
+npm run type-check   # TypeScript check
 ```
 
 ---
 
-## 📚 Important Files
+## Project Status
 
-- `/home/n1ce/pms-app/PHASE_1_COMPLETE.md` - Detailed Phase 1 summary
-- `/home/n1ce/pms-app/README.md` - Full project documentation
-- `/home/n1ce/pms-app/backend/prisma/schema.prisma` - Database schema
-- `/home/n1ce/pms-app/docker-compose.yml` - Infrastructure config
+| Phase | Status |
+|---|---|
+| 1 — Foundation | ✅ Complete |
+| 2 — Authentication | ✅ Complete |
+| 3 — Core CRUD | ✅ Complete |
+| 3.5 — Leases & Assignment | ✅ Complete |
+| 4 — Payments | ✅ Complete |
+| 5 — Maintenance | ✅ Complete |
+| 6 — Reporting | 🔮 Planned |
+| 7 — Production | 🔮 Planned |
 
 ---
 
-## ❓ Troubleshooting
+## Troubleshooting
 
 ### Port Already in Use
 ```bash
-# Kill process on port 5173 (frontend)
-lsof -ti:5173 | xargs kill -9
-
-# Kill process on port 3000 (backend)
-lsof -ti:3000 | xargs kill -9
-
-# Kill process on port 5432 (database)
-lsof -ti:5432 | xargs kill -9
+lsof -ti:5173 | xargs kill -9   # Frontend
+lsof -ti:3000 | xargs kill -9   # Backend
+lsof -ti:5432 | xargs kill -9   # Database
 ```
 
-### Database Connection Error
-Ensure PostgreSQL is running (via Docker Compose):
+### API Requests Going to Wrong IP
+The frontend bakes `VITE_API_URL` at build time. If you change the IP in `docker-compose.yml`, recreate the frontend container:
 ```bash
-docker-compose ps  # Check status
-docker-compose logs postgres  # View logs
+docker compose up -d --no-deps --build frontend
 ```
 
-### Dependencies Issue
+### Prisma Client Out of Sync
 ```bash
-# Clean and reinstall
-rm -rf node_modules package-lock.json
-npm install
+docker compose exec backend npx prisma db push
+docker compose exec backend npx prisma generate
+docker compose restart backend
+```
+
+### CORS Errors from New Origin
+Add the new origin to `CORS_ORIGIN` in `docker-compose.yml` (comma-separated), then:
+```bash
+docker compose up -d --no-deps backend
 ```
 
 ---
 
-## 📞 Next Steps
+## Key Files
 
-1. Review the full architecture in `README.md`
-2. Check `PHASE_1_COMPLETE.md` for what was created
-3. Start implementing Phase 2 (Authentication)
-4. See the full development roadmap in the plan file
-
----
-
-**Ready to build? Start with:** `docker-compose up`
+- `docker-compose.yml` — env vars (CORS_ORIGIN, VITE_API_URL, DB creds)
+- `backend/prisma/schema.prisma` — database schema
+- `backend/src/main.ts` — CORS config, app bootstrap
+- `README.md` — full documentation
+- `PHASE_1_COMPLETE.md` — detailed implementation history
+- `PROJECT_SUMMARY.txt` — feature overview and file structure
