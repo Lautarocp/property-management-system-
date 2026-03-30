@@ -32,7 +32,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this}
       JWT_EXPIRES_IN: 7d
       NODE_ENV: development
-      CORS_ORIGIN: http://192.168.2.170:5173
+      CORS_ORIGIN: http://192.168.2.170:5173,http://100.114.72.114:5173
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,7 +50,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_URL: http://192.168.2.170:3000/api
+      VITE_API_URL: http://100.114.72.114:3000/api
     depends_on:
       - backend
     volumes:

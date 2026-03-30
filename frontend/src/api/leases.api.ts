@@ -28,7 +28,9 @@ export const leasesApi = {
   getAll: (apartmentId?: string) =>
     apiClient.get<Lease[]>('/leases', { params: apartmentId ? { apartmentId } : {} }).then(r => r.data),
   create: (data: CreateLeasePayload) => apiClient.post<Lease>('/leases', data).then(r => r.data),
-  terminate: (id: string) => apiClient.patch(`/leases/${id}/terminate`).then(r => r.data),
+  getPendingCharges: (id: string) => apiClient.get(`/leases/${id}/pending-charges`).then(r => r.data),
+  terminate: (id: string, deductFromDeposit = false) =>
+    apiClient.patch(`/leases/${id}/terminate`, { deductFromDeposit }).then(r => r.data),
   transfer: (id: string, data: TransferLeasePayload) =>
     apiClient.patch(`/leases/${id}/transfer`, data).then(r => r.data),
   addItem: (leaseId: string, data: LeaseItemPayload) =>

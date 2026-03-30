@@ -85,27 +85,27 @@ async function main() {
 
   // ─── Apartments — Complex 1 ───────────────────────────────────────────────
   const apts1 = await Promise.all([
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '1A' } }, update: {}, create: { id: 'apt-1a', number: '1A', floor: 1, bedrooms: 1, bathrooms: 1, area: 45, monthlyRent: 850, status: 'OCCUPIED', complexId: complex1.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '1B' } }, update: {}, create: { id: 'apt-1b', number: '1B', floor: 1, bedrooms: 2, bathrooms: 1, area: 65, monthlyRent: 1100, status: 'OCCUPIED', complexId: complex1.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '2A' } }, update: {}, create: { id: 'apt-2a', number: '2A', floor: 2, bedrooms: 2, bathrooms: 2, area: 75, monthlyRent: 1300, status: 'AVAILABLE', complexId: complex1.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '2B' } }, update: {}, create: { id: 'apt-2b', number: '2B', floor: 2, bedrooms: 3, bathrooms: 2, area: 95, monthlyRent: 1600, status: 'OCCUPIED', complexId: complex1.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '3A' } }, update: {}, create: { id: 'apt-3a', number: '3A', floor: 3, bedrooms: 1, bathrooms: 1, area: 42, monthlyRent: 800, status: 'MAINTENANCE', complexId: complex1.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '3B' } }, update: {}, create: { id: 'apt-3b', number: '3B', floor: 3, bedrooms: 2, bathrooms: 1, area: 68, monthlyRent: 1150, status: 'AVAILABLE', complexId: complex1.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '1A' } }, update: {}, create: { id: 'apt-1a', number: '1A', floor: 1, area: 45, monthlyRent: 850, status: 'OCCUPIED', complexId: complex1.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '1B' } }, update: {}, create: { id: 'apt-1b', number: '1B', floor: 1, area: 65, monthlyRent: 1100, status: 'OCCUPIED', complexId: complex1.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '2A' } }, update: {}, create: { id: 'apt-2a', number: '2A', floor: 2, area: 75, monthlyRent: 1300, status: 'AVAILABLE', complexId: complex1.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '2B' } }, update: {}, create: { id: 'apt-2b', number: '2B', floor: 2, area: 95, monthlyRent: 1600, status: 'OCCUPIED', complexId: complex1.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '3A' } }, update: {}, create: { id: 'apt-3a', number: '3A', floor: 3, area: 42, monthlyRent: 800, status: 'MAINTENANCE', complexId: complex1.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex1.id, number: '3B' } }, update: {}, create: { id: 'apt-3b', number: '3B', floor: 3, area: 68, monthlyRent: 1150, status: 'AVAILABLE', complexId: complex1.id } }),
   ]);
 
   // ─── Apartments — Complex 2 ───────────────────────────────────────────────
   const apts2 = await Promise.all([
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '101' } }, update: {}, create: { id: 'apt-101', number: '101', floor: 1, bedrooms: 1, bathrooms: 1, area: 38, monthlyRent: 700, status: 'OCCUPIED', complexId: complex2.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '201' } }, update: {}, create: { id: 'apt-201', number: '201', floor: 2, bedrooms: 2, bathrooms: 1, area: 60, monthlyRent: 950, status: 'AVAILABLE', complexId: complex2.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '301' } }, update: {}, create: { id: 'apt-301', number: '301', floor: 3, bedrooms: 2, bathrooms: 2, area: 72, monthlyRent: 1200, status: 'OCCUPIED', complexId: complex2.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '401' } }, update: {}, create: { id: 'apt-401', number: '401', floor: 4, bedrooms: 3, bathrooms: 2, area: 90, monthlyRent: 1500, status: 'AVAILABLE', complexId: complex2.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '101' } }, update: {}, create: { id: 'apt-101', number: '101', floor: 1, area: 38, monthlyRent: 700, status: 'OCCUPIED', complexId: complex2.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '201' } }, update: {}, create: { id: 'apt-201', number: '201', floor: 2, area: 60, monthlyRent: 950, status: 'AVAILABLE', complexId: complex2.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '301' } }, update: {}, create: { id: 'apt-301', number: '301', floor: 3, area: 72, monthlyRent: 1200, status: 'OCCUPIED', complexId: complex2.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex2.id, number: '401' } }, update: {}, create: { id: 'apt-401', number: '401', floor: 4, area: 90, monthlyRent: 1500, status: 'AVAILABLE', complexId: complex2.id } }),
   ]);
 
   // ─── Apartments — Complex 3 ───────────────────────────────────────────────
   const apts3 = await Promise.all([
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex3.id, number: 'C1' } }, update: {}, create: { id: 'apt-c1', number: 'C1', floor: 1, bedrooms: 3, bathrooms: 2, area: 110, monthlyRent: 1400, status: 'OCCUPIED', complexId: complex3.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex3.id, number: 'C2' } }, update: {}, create: { id: 'apt-c2', number: 'C2', floor: 1, bedrooms: 2, bathrooms: 1, area: 80, monthlyRent: 1050, status: 'AVAILABLE', complexId: complex3.id } }),
-    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex3.id, number: 'C3' } }, update: {}, create: { id: 'apt-c3', number: 'C3', floor: 1, bedrooms: 4, bathrooms: 3, area: 140, monthlyRent: 1800, status: 'OCCUPIED', complexId: complex3.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex3.id, number: 'C1' } }, update: {}, create: { id: 'apt-c1', number: 'C1', floor: 1, area: 110, monthlyRent: 1400, status: 'OCCUPIED', complexId: complex3.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex3.id, number: 'C2' } }, update: {}, create: { id: 'apt-c2', number: 'C2', floor: 1, area: 80, monthlyRent: 1050, status: 'AVAILABLE', complexId: complex3.id } }),
+    prisma.apartment.upsert({ where: { complexId_number: { complexId: complex3.id, number: 'C3' } }, update: {}, create: { id: 'apt-c3', number: 'C3', floor: 1, area: 140, monthlyRent: 1800, status: 'OCCUPIED', complexId: complex3.id } }),
   ]);
 
   console.log('✅ Apartments created');

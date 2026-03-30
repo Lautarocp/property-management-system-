@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments'
 import { leasesApi } from '@/api/leases.api'
-import type { CreatePaymentPayload, PaymentItemPayload } from '@/api/payments.api'
+import type { CreatePaymentPayload } from '@/api/payments.api'
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700',
@@ -16,7 +16,16 @@ const TYPE_LABELS: Record<string, string> = {
   RENT: 'Rent',
   DEPOSIT: 'Deposit',
   LATE_FEE: 'Late Fee',
+  MAINTENANCE: 'Maintenance',
   OTHER: 'Other',
+}
+
+const TYPE_COLORS: Record<string, string> = {
+  RENT: 'bg-blue-100 text-blue-700',
+  DEPOSIT: 'bg-purple-100 text-purple-700',
+  LATE_FEE: 'bg-orange-100 text-orange-700',
+  MAINTENANCE: 'bg-red-100 text-red-700',
+  OTHER: 'bg-gray-100 text-gray-600',
 }
 
 const FILTERS = ['ALL', 'PENDING', 'OVERDUE', 'PAID'] as const
@@ -32,8 +41,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
   })
   const activeLeases = (leases as any[])?.filter(l => l.status === 'ACTIVE') ?? []
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<{ leaseId: string; dueDate: string; type: string; notes: string }>()
-  const selectedLeaseId = watch('leaseId')
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<{ leaseId: string; dueDate: string; type: string; notes: string }>()
 
   const [items, setItems] = useState<{ key: number; name: string; amount: string }[]>([])
   const [newName, setNewName] = useState('')
@@ -386,8 +394,10 @@ export function PaymentsPage() {
                       #{payment.lease.apartment.number}
                       <span className="text-gray-400 ml-1 text-xs">— {payment.lease.apartment.complex?.name}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {TYPE_LABELS[payment.type] ?? payment.type}
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[payment.type] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {TYPE_LABELS[payment.type] ?? payment.type}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex flex-col items-end">

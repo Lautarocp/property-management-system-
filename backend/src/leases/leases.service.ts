@@ -80,15 +80,39 @@ export class LeasesService {
     return lease;
   }
 
-  async terminate(id: string) {
+  async getPendingCharges(id: string) {
     const lease = await this.findOne(id);
-    const [updated] = await this.prisma.$transaction([
+    const charges = await this.prisma.payment.findMany({
+      where: { leaseId: id, type: 'MAINTENANCE', status: 'PENDING' },
+      include: { items: true },
+    });
+    return { lease, charges, totalCharges: charges.reduce((s, c) => s + Number(c.amount), 0) };
+  }
+
+  async terminate(id: string, deductFromDeposit = false) {
+    const lease = await this.findOne(id);
+
+    const pendingCharges = await this.prisma.payment.findMany({
+      where: { leaseId: id, type: 'MAINTENANCE', status: 'PENDING' },
+    });
+
+    const ops: any[] = [
       this.prisma.lease.update({ where: { id }, data: { status: 'TERMINATED' } }),
-      this.prisma.apartment.update({
-        where: { id: lease.apartmentId },
-        data: { status: 'AVAILABLE' },
-      }),
-    ]);
+      this.prisma.apartment.update({ where: { id: lease.apartmentId }, data: { status: 'AVAILABLE' } }),
+    ];
+
+    if (deductFromDeposit && pendingCharges.length > 0) {
+      pendingCharges.forEach(charge => {
+        ops.push(
+          this.prisma.payment.update({
+            where: { id: charge.id },
+            data: { status: 'PAID', paidDate: new Date(), notes: (charge.notes ?? '') + ' — Deducted from deposit on lease termination' },
+          }),
+        );
+      });
+    }
+
+    const [updated] = await this.prisma.$transaction(ops);
     return updated;
   }
 
@@ -112,7 +136,6 @@ export class LeasesService {
     if (existingLease) throw new BadRequestException('Target apartment already has an active lease');
 
     const [newLease] = await this.prisma.$transaction([
-      // Create new lease on target apartment
       this.prisma.lease.create({
         data: {
           apartmentId: dto.newApartmentId,
@@ -128,18 +151,9 @@ export class LeasesService {
           apartment: { select: { id: true, number: true, floor: true } },
         },
       }),
-      // Mark target apartment as occupied
-      this.prisma.apartment.update({
-        where: { id: dto.newApartmentId },
-        data: { status: 'OCCUPIED' },
-      }),
-      // Terminate old lease
+      this.prisma.apartment.update({ where: { id: dto.newApartmentId }, data: { status: 'OCCUPIED' } }),
       this.prisma.lease.update({ where: { id }, data: { status: 'TERMINATED' } }),
-      // Free old apartment
-      this.prisma.apartment.update({
-        where: { id: currentLease.apartmentId },
-        data: { status: 'AVAILABLE' },
-      }),
+      this.prisma.apartment.update({ where: { id: currentLease.apartmentId }, data: { status: 'AVAILABLE' } }),
     ]);
 
     return newLease;

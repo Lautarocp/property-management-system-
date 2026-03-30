@@ -1,9 +1,13 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
+import { useQuery } from '@tanstack/react-query'
 import { useApartments, useCreateApartment, useUpdateApartment, useDeleteApartment } from '@/hooks/useApartments'
 import { useComplexes } from '@/hooks/useComplexes'
 import { useTenants } from '@/hooks/useTenants'
 import { useCreateLease, useTerminateLease, useTransferLease, useAddLeaseItemForApartment, useRemoveLeaseItemForApartment } from '@/hooks/useLeases'
+import { useIncreaseRent } from '@/hooks/useApartments'
+import { leasesApi } from '@/api/leases.api'
 import type { Apartment } from '@/types'
 import type { CreateApartmentPayload } from '@/api/apartments.api'
 import type { CreateLeasePayload, TransferLeasePayload } from '@/api/leases.api'
@@ -227,8 +231,11 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
 function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose: () => void }) {
   const addItem = useAddLeaseItemForApartment()
   const removeItem = useRemoveLeaseItemForApartment()
+  const increaseRent = useIncreaseRent()
   const [newItemName, setNewItemName] = useState('')
   const [newItemAmount, setNewItemAmount] = useState('')
+  const [showRentIncrease, setShowRentIncrease] = useState(false)
+  const [rentPct, setRentPct] = useState('')
 
   const activeLease = apartment.leases?.[0]
 
@@ -263,6 +270,50 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
                 </span>
               </div>
             </div>
+          </section>
+
+          {/* Rent Increase */}
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Rent Adjustment</h4>
+              <button
+                onClick={() => { setShowRentIncrease(!showRentIncrease); setRentPct('') }}
+                className="text-xs text-indigo-600 hover:underline"
+              >
+                {showRentIncrease ? 'Cancel' : '% Adjust'}
+              </button>
+            </div>
+            {showRentIncrease && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="e.g. 10 for +10%"
+                  value={rentPct}
+                  onChange={(e: { target: { value: string } }) => setRentPct(e.target.value)}
+                  className="flex-1 border rounded-lg px-2 py-1 text-sm"
+                />
+                <button
+                  onClick={() => {
+                    const pct = Number(rentPct)
+                    if (!pct) return
+                    increaseRent.mutate(
+                      { id: apartment.id, percentage: pct },
+                      { onSuccess: () => { setShowRentIncrease(false); setRentPct('') } }
+                    )
+                  }}
+                  disabled={increaseRent.isPending || !rentPct}
+                  className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {increaseRent.isPending ? '...' : 'Apply'}
+                </button>
+              </div>
+            )}
+            {showRentIncrease && rentPct && (
+              <p className="text-xs text-gray-500 mt-1">
+                ${Number(apartment.monthlyRent).toLocaleString()} → ${(Number(apartment.monthlyRent) * (1 + Number(rentPct) / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </p>
+            )}
           </section>
 
           {/* Active Lease & Items */}
@@ -365,6 +416,81 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
   )
 }
 
+function TerminateModal({ leaseId, depositAmount, onClose }: {
+  leaseId: string
+  depositAmount: number
+  onClose: () => void
+}) {
+  const terminateLease = useTerminateLease()
+  const { data, isLoading } = useQuery({
+    queryKey: ['pending-charges', leaseId],
+    queryFn: () => leasesApi.getPendingCharges(leaseId),
+  })
+
+  const charges = (data as any)?.charges ?? []
+  const totalCharges = (data as any)?.totalCharges ?? 0
+
+  const doTerminate = (deductFromDeposit: boolean) => {
+    terminateLease.mutate({ id: leaseId, deductFromDeposit }, { onSuccess: onClose })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b">
+          <h3 className="font-semibold text-gray-900">Terminate Lease</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {isLoading ? (
+            <p className="text-sm text-gray-400">Checking pending charges...</p>
+          ) : charges.length === 0 ? (
+            <p className="text-sm text-gray-600">No pending maintenance charges. The lease will be terminated and the apartment marked as available.</p>
+          ) : (
+            <div>
+              <p className="text-sm text-gray-700 mb-3">
+                This tenant has <span className="font-semibold text-red-600">{charges.length} pending maintenance charge{charges.length > 1 ? 's' : ''}</span> totalling <span className="font-semibold">${totalCharges.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>.
+              </p>
+              <div className="space-y-2 mb-3">
+                {charges.map((c: any) => (
+                  <div key={c.id} className="flex justify-between text-sm bg-red-50 rounded-lg px-3 py-2">
+                    <span className="text-gray-700">{c.notes?.replace('Maintenance charge: ', '') ?? 'Charge'}</span>
+                    <span className="font-medium text-red-700">${Number(c.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">Deposit on file: <span className="font-medium">${depositAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-5 border-t flex flex-col gap-2">
+          {charges.length > 0 && (
+            <button
+              onClick={() => doTerminate(true)}
+              disabled={terminateLease.isPending}
+              className="w-full px-4 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+            >
+              {terminateLease.isPending ? 'Processing...' : `Terminate & deduct charges from deposit`}
+            </button>
+          )}
+          <button
+            onClick={() => doTerminate(false)}
+            disabled={terminateLease.isPending}
+            className="w-full px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {terminateLease.isPending ? 'Processing...' : charges.length > 0 ? 'Terminate & leave charges pending' : 'Terminate lease'}
+          </button>
+          <button onClick={onClose} className="w-full px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ApartmentsPage() {
   const { data: apartments, isLoading } = useApartments()
   const createApartment = useCreateApartment()
@@ -372,13 +498,15 @@ export function ApartmentsPage() {
   const deleteApartment = useDeleteApartment()
   const terminateLease = useTerminateLease()
 
+  const location = useLocation()
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<Apartment | null>(null)
-  const [viewing, setViewing] = useState<any | null>(null)
+  const [viewing, setViewing] = useState<string | null>(null)
   const [assigning, setAssigning] = useState<any | null>(null)
   const [moving, setMoving] = useState<any | null>(null)
-  const [filterComplex, setFilterComplex] = useState('')
+  const [filterComplex, setFilterComplex] = useState(() => (location.state as any)?.complexId ?? '')
   const [filterStatus, setFilterStatus] = useState('')
+  const [terminatingLease, setTerminatingLease] = useState<{ leaseId: string; depositAmount: number } | null>(null)
 
   const complexOptions: { id: string; name: string }[] = (apartments as any[] ?? []).reduce(
     (acc: any[], a: any) => {
@@ -407,14 +535,15 @@ export function ApartmentsPage() {
   const handleTerminate = (apt: any) => {
     const lease = apt.leases?.[0]
     if (!lease) return
-    if (confirm('Remove tenant and terminate lease?')) terminateLease.mutate(lease.id)
+    setTerminatingLease({ leaseId: lease.id, depositAmount: Number(lease.depositAmount) })
   }
 
   return (
     <div className="p-8">
-      {viewing && <ApartmentDetailPanel apartment={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <ApartmentDetailPanel apartment={(apartments as any[])?.find((a: any) => a.id === viewing)} onClose={() => setViewing(null)} />}
       {assigning && <AssignTenantModal apartment={assigning} onClose={() => setAssigning(null)} />}
       {moving && <MoveTenantModal apartment={moving} allApartments={apartments ?? []} onClose={() => setMoving(null)} />}
+      {terminatingLease && <TerminateModal leaseId={terminatingLease.leaseId} depositAmount={terminatingLease.depositAmount} onClose={() => setTerminatingLease(null)} />}
 
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -518,7 +647,7 @@ export function ApartmentsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2 flex-wrap">
-                        <button onClick={() => setViewing(apt)} className="text-xs text-indigo-600 hover:underline">View</button>
+                        <button onClick={() => setViewing(apt.id)} className="text-xs text-indigo-600 hover:underline">View</button>
                         {!tenant ? (
                           <button onClick={() => setAssigning(apt)} className="text-xs text-green-600 hover:underline">Assign</button>
                         ) : (

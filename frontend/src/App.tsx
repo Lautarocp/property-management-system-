@@ -9,6 +9,7 @@ import { ComplexesPage } from '@/pages/complexes/ComplexesPage'
 import { ApartmentsPage } from '@/pages/apartments/ApartmentsPage'
 import { TenantsPage } from '@/pages/tenants/TenantsPage'
 import { PaymentsPage } from '@/pages/payments/PaymentsPage'
+import { MaintenancePage } from '@/pages/maintenance/MaintenancePage'
 
 const queryClient = new QueryClient()
 
@@ -31,6 +32,7 @@ function App() {
             <Route path="/apartments" element={<ApartmentsPage />} />
             <Route path="/tenants" element={<TenantsPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
+            <Route path="/maintenance" element={<MaintenancePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

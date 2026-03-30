@@ -15,9 +15,11 @@ export function useCreateLease() {
 export function useTerminateLease() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => leasesApi.terminate(id),
+    mutationFn: ({ id, deductFromDeposit }: { id: string; deductFromDeposit?: boolean }) =>
+      leasesApi.terminate(id, deductFromDeposit),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['apartments'] })
+      qc.invalidateQueries({ queryKey: ['payments'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
     },
   })

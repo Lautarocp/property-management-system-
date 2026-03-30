@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useComplexes, useCreateComplex, useUpdateComplex, useDeleteComplex } from '@/hooks/useComplexes'
 import type { ApartmentComplex } from '@/types'
@@ -68,6 +69,7 @@ export function ComplexesPage() {
   const updateComplex = useUpdateComplex()
   const deleteComplex = useDeleteComplex()
 
+  const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<ApartmentComplex | null>(null)
 
@@ -118,7 +120,11 @@ export function ComplexesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {complexes?.map(complex => (
-            <div key={complex.id} className="bg-white rounded-xl shadow-sm p-5">
+            <div
+              key={complex.id}
+              onClick={() => navigate('/apartments', { state: { complexId: complex.id } })}
+              className="bg-white rounded-xl shadow-sm p-5 cursor-pointer hover:shadow-md transition-shadow"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="font-semibold text-gray-900">{complex.name}</h3>
@@ -134,13 +140,13 @@ export function ComplexesPage() {
               )}
               <div className="flex gap-2 pt-3 border-t">
                 <button
-                  onClick={() => setEditing(complex)}
+                  onClick={(e: { stopPropagation: () => void }) => { e.stopPropagation(); setEditing(complex) }}
                   className="text-sm text-blue-600 hover:underline"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(complex.id)}
+                  onClick={(e: { stopPropagation: () => void }) => { e.stopPropagation(); handleDelete(complex.id) }}
                   className="text-sm text-red-500 hover:underline"
                 >
                   Delete

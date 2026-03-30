@@ -78,10 +78,11 @@ export interface Payment {
   dueDate: string
   paidDate?: string
   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
-  type: 'RENT' | 'DEPOSIT' | 'LATE_FEE' | 'OTHER'
+  type: 'RENT' | 'DEPOSIT' | 'LATE_FEE' | 'MAINTENANCE' | 'OTHER'
   notes?: string
   leaseId: string
   tenantId: string
+  maintenanceRequestId?: string
   createdAt: string
   updatedAt: string
 }

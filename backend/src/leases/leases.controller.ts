@@ -29,9 +29,14 @@ export class LeasesController {
     return this.service.create(dto);
   }
 
+  @Get(':id/pending-charges')
+  getPendingCharges(@Param('id') id: string) {
+    return this.service.getPendingCharges(id);
+  }
+
   @Patch(':id/terminate')
-  terminate(@Param('id') id: string) {
-    return this.service.terminate(id);
+  terminate(@Param('id') id: string, @Body() body: { deductFromDeposit?: boolean }) {
+    return this.service.terminate(id, body?.deductFromDeposit ?? false);
   }
 
   @Patch(':id/transfer')

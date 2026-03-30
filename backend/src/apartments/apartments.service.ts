@@ -50,6 +50,29 @@ export class ApartmentsService {
     return this.prisma.apartment.update({ where: { id }, data: dto });
   }
 
+  async increaseRent(id: string, percentage: number) {
+    const apartment = await this.findOne(id);
+    const currentRent = Number(apartment.monthlyRent);
+    const newRent = Math.round(currentRent * (1 + percentage / 100) * 100) / 100;
+
+    const activeLease = apartment.leases?.[0];
+
+    const [updatedApartment] = await this.prisma.$transaction([
+      this.prisma.apartment.update({
+        where: { id },
+        data: { monthlyRent: newRent },
+      }),
+      ...(activeLease
+        ? [this.prisma.lease.update({
+            where: { id: activeLease.id },
+            data: { monthlyRent: newRent },
+          })]
+        : []),
+    ]);
+
+    return { apartment: updatedApartment, previousRent: currentRent, newRent };
+  }
+
   async remove(id: string) {
     await this.findOne(id);
     const leases = await this.prisma.lease.findMany({ where: { apartmentId: id }, select: { id: true } });
