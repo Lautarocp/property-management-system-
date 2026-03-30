@@ -106,7 +106,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
     const charge = Number(tenantCharge) || undefined
     updateMaintenance.mutate(
       { id: request.id, data: { status: 'RESOLVED', repairCost: cost, tenantChargeAmount: charge } },
-      { onSuccess: onClose }
+      { onSuccess: () => setResolvingForm(false) }
     )
   }
 
@@ -224,7 +224,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Update Status</p>
               <button
-                onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: 'OPEN' } }, { onSuccess: onClose })}
+                onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: 'OPEN' } })}
                 disabled={updateMaintenance.isPending}
                 className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
@@ -285,7 +285,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                   {(['OPEN', 'IN_PROGRESS'] as const).filter(s => s !== request.status).map(s => (
                     <button
                       key={s}
-                      onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: s } }, { onSuccess: onClose })}
+                      onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: s } })}
                       disabled={updateMaintenance.isPending}
                       className="px-3 py-1 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-50"
                     >
@@ -301,7 +301,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                     </button>
                   )}
                   <button
-                    onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: 'CLOSED' } }, { onSuccess: onClose })}
+                    onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: 'CLOSED' } })}
                     disabled={updateMaintenance.isPending}
                     className="px-3 py-1 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-50"
                   >
@@ -319,7 +319,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
 
 export function MaintenancePage() {
   const [showCreate, setShowCreate] = useState(false)
-  const [viewing, setViewing] = useState<any | null>(null)
+  const [viewingId, setViewingId] = useState<string | null>(null)
   const [filterApt, setFilterApt] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 
@@ -331,6 +331,9 @@ export function MaintenancePage() {
   const filtered = (requests as any[] ?? [])
     .filter((r: any) => !filterApt || r.apartmentId === filterApt)
     .filter((r: any) => !filterStatus || r.status === filterStatus)
+
+  // Always derived from live query data — stays in sync after mutations
+  const viewing = viewingId ? (requests as any[] ?? []).find((r: any) => r.id === viewingId) ?? null : null
 
   const handleCreate = (data: CreateMaintenancePayload) => {
     createMaintenance.mutate(data, { onSuccess: () => setShowCreate(false) })
@@ -387,7 +390,7 @@ export function MaintenancePage() {
           {filtered.map((req: any) => (
             <div
               key={req.id}
-              onClick={() => setViewing(req)}
+              onClick={() => setViewingId(req.id)}
               className="bg-white rounded-xl shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between gap-4">
@@ -432,7 +435,7 @@ export function MaintenancePage() {
       {viewing && (
         <DetailPanel
           request={viewing}
-          onClose={() => setViewing(null)}
+          onClose={() => setViewingId(null)}
         />
       )}
     </div>
