@@ -72,6 +72,8 @@ export class MaintenanceService {
     const data: any = { ...dto };
     if (dto.status === 'RESOLVED' || dto.status === 'CLOSED') {
       data.resolvedAt = new Date();
+    } else if (dto.status === 'OPEN' || dto.status === 'IN_PROGRESS') {
+      data.resolvedAt = null;
     }
 
     const updated = await this.prisma.maintenanceRequest.update({ where: { id }, data, include });
