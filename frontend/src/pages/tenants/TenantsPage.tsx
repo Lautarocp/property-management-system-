@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useTenants, useCreateTenant, useUpdateTenant, useDeleteTenant } from '@/hooks/useTenants'
 import { usePayments, useMarkAsPaid, useMarkAsUnpaid } from '@/hooks/usePayments'
-import { useAddLeaseItem, useRemoveLeaseItem } from '@/hooks/useLeases'
 import { tenantsApi } from '@/api/tenants.api'
 import type { Tenant } from '@/types'
 import type { CreateTenantPayload } from '@/api/tenants.api'
@@ -115,10 +114,6 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
   const { data: payments } = usePayments({ tenantId })
   const markAsPaid = useMarkAsPaid()
   const markAsUnpaid = useMarkAsUnpaid()
-  const addItem = useAddLeaseItem(tenantId)
-  const removeItem = useRemoveLeaseItem(tenantId)
-  const [newItemName, setNewItemName] = useState('')
-  const [newItemAmount, setNewItemAmount] = useState('')
 
   const activeLease = (tenant as any)?.leases?.find((l: any) => l.status === 'ACTIVE')
   const leaseHistory = (tenant as any)?.leases?.filter((l: any) => l.status !== 'ACTIVE') ?? []
@@ -259,65 +254,6 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
                     </div>
                   )}
 
-                  {/* Lease Items */}
-                  <div className="pt-3 border-t border-blue-200">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment Breakdown</p>
-                    {activeLease.items && activeLease.items.length > 0 ? (
-                      <div className="space-y-1 mb-3">
-                        {activeLease.items.map((item: any) => (
-                          <div key={item.id} className="flex items-center justify-between text-sm">
-                            <span className="text-gray-700">{item.name}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="font-medium text-gray-900">${Number(item.amount).toLocaleString()}</span>
-                              <button
-                                onClick={() => removeItem.mutate({ leaseId: activeLease.id, itemId: item.id })}
-                                className="text-xs text-red-400 hover:text-red-600"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        <div className="flex items-center justify-between text-sm font-semibold border-t border-blue-200 pt-1 mt-1">
-                          <span className="text-gray-700">Total</span>
-                          <span className="text-gray-900">
-                            ${activeLease.items.reduce((sum: number, i: any) => sum + Number(i.amount), 0).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400 italic mb-2">No items yet.</p>
-                    )}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Item name"
-                        value={newItemName}
-                        onChange={(e: { target: { value: string } }) => setNewItemName(e.target.value)}
-                        className="flex-1 border rounded-lg px-2 py-1 text-xs"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Amount"
-                        value={newItemAmount}
-                        onChange={(e: { target: { value: string } }) => setNewItemAmount(e.target.value)}
-                        className="w-24 border rounded-lg px-2 py-1 text-xs"
-                      />
-                      <button
-                        onClick={() => {
-                          if (!newItemName.trim() || !newItemAmount) return
-                          addItem.mutate(
-                            { leaseId: activeLease.id, data: { name: newItemName.trim(), amount: Number(newItemAmount) } },
-                            { onSuccess: () => { setNewItemName(''); setNewItemAmount('') } }
-                          )
-                        }}
-                        disabled={addItem.isPending}
-                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-gray-400 italic">No active lease — tenant is not currently assigned to an apartment.</p>

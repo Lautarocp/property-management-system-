@@ -5,8 +5,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useApartments, useCreateApartment, useUpdateApartment, useDeleteApartment } from '@/hooks/useApartments'
 import { useComplexes } from '@/hooks/useComplexes'
 import { useTenants } from '@/hooks/useTenants'
-import { useCreateLease, useTerminateLease, useTransferLease, useAddLeaseItemForApartment, useRemoveLeaseItemForApartment } from '@/hooks/useLeases'
+import { useCreateLease, useTerminateLease, useTransferLease } from '@/hooks/useLeases'
 import { useIncreaseRent } from '@/hooks/useApartments'
+import { useMaintenance } from '@/hooks/useMaintenance'
+import { useCreatePayment } from '@/hooks/usePayments'
 import { leasesApi } from '@/api/leases.api'
 import type { Apartment } from '@/types'
 import type { CreateApartmentPayload } from '@/api/apartments.api'
@@ -228,18 +230,241 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
   )
 }
 
+function NewPaymentModal({ apartment, onClose }: { apartment: any; onClose: () => void }) {
+  const activeLease = apartment.leases?.[0]
+  const createPayment = useCreatePayment()
+
+  const [items, setItems] = useState<{ key: number; name: string; amount: string }[]>(() => {
+    let k = 0
+    const base = { key: k++, name: 'Base Rent', amount: String(Number(activeLease?.monthlyRent ?? 0)) }
+    const extras = (activeLease?.items ?? []).map((li: any) => ({ key: k++, name: li.name, amount: String(Number(li.amount)) }))
+    return [base, ...extras]
+  })
+  const [keyCounter, setKeyCounter] = useState(items.length)
+  const [newName, setNewName] = useState('')
+  const [newAmount, setNewAmount] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [notes, setNotes] = useState('')
+
+  const total = items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
+
+  const addItem = () => {
+    if (!newName.trim() || !newAmount) return
+    setItems(prev => [...prev, { key: keyCounter, name: newName.trim(), amount: newAmount }])
+    setKeyCounter(k => k + 1)
+    setNewName('')
+    setNewAmount('')
+  }
+
+  const removeItem = (key: number) => setItems(prev => prev.filter(i => i.key !== key))
+
+  const updateItem = (key: number, field: 'name' | 'amount', value: string) =>
+    setItems(prev => prev.map(i => i.key === key ? { ...i, [field]: value } : i))
+
+  const handleSubmit = () => {
+    if (!dueDate || !activeLease) return
+    createPayment.mutate(
+      {
+        leaseId: activeLease.id,
+        dueDate,
+        notes: notes || undefined,
+        items: items.map(i => ({ name: i.name, amount: Number(i.amount) })),
+      },
+      { onSuccess: onClose }
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center" style={{ zIndex: 60 }}>
+      <div className="bg-white rounded-xl shadow-xl w-full sm:max-w-lg mx-4 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">New Payment</h3>
+            <p className="text-sm text-gray-500">#{apartment.number} — {activeLease?.tenant?.firstName} {activeLease?.tenant?.lastName}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-4 flex-1">
+          {/* Payment breakdown */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-4 py-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment Breakdown</p>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {items.map(item => (
+                <div key={item.key} className="flex items-center gap-3 px-4 py-2">
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={e => updateItem(item.key, 'name', e.target.value)}
+                    className="flex-1 border-0 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1"
+                  />
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-400 text-sm">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={item.amount}
+                      onChange={e => updateItem(item.key, 'amount', e.target.value)}
+                      className="w-24 border-0 bg-transparent text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1"
+                    />
+                  </div>
+                  <button type="button" onClick={() => removeItem(item.key)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-t">
+              <input
+                type="text"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
+                placeholder="Item name"
+                className="flex-1 border rounded px-2 py-1 text-xs"
+              />
+              <div className="flex items-center gap-1">
+                <span className="text-gray-400 text-xs">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newAmount}
+                  onChange={e => setNewAmount(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
+                  placeholder="Amount"
+                  className="w-28 border rounded px-2 py-1 text-xs"
+                />
+              </div>
+              <button type="button" onClick={addItem} className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">+ Add</button>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 border-t font-semibold">
+              <span className="text-sm text-gray-700">Total</span>
+              <span className={`text-base ${total < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Due Date *</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+              <input
+                type="text"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Optional"
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 border-t flex gap-3 justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+          <button
+            onClick={handleSubmit}
+            disabled={createPayment.isPending || !dueDate}
+            className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {createPayment.isPending ? 'Creating...' : 'Create Payment'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const MAINTENANCE_STATUS_COLORS: Record<string, string> = {
+  OPEN: 'bg-yellow-100 text-yellow-700',
+  IN_PROGRESS: 'bg-blue-100 text-blue-700',
+  RESOLVED: 'bg-green-100 text-green-700',
+  CLOSED: 'bg-gray-100 text-gray-500',
+}
+
+const MAINTENANCE_PRIORITY_COLORS: Record<string, string> = {
+  LOW: 'bg-gray-100 text-gray-500',
+  MEDIUM: 'bg-yellow-100 text-yellow-700',
+  HIGH: 'bg-orange-100 text-orange-700',
+  URGENT: 'bg-red-100 text-red-700',
+}
+
+function MaintenanceHistoryModal({ apartment, onClose }: { apartment: any; onClose: () => void }) {
+  const { data: maintenanceHistory } = useMaintenance(apartment.id)
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center" style={{ zIndex: 60 }}>
+      <div className="bg-white rounded-xl shadow-xl w-full sm:max-w-lg mx-4 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Maintenance History</h3>
+            <p className="text-sm text-gray-500">#{apartment.number} — {apartment.complex?.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+        </div>
+        <div className="overflow-y-auto p-5">
+          {!maintenanceHistory || maintenanceHistory.length === 0 ? (
+            <p className="text-sm text-gray-400 italic text-center py-6">No maintenance records for this apartment.</p>
+          ) : (
+            <div className="space-y-3">
+              {maintenanceHistory.map((req: any) => (
+                <div key={req.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-800">{req.title}</p>
+                    <div className="flex gap-1.5 shrink-0">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${MAINTENANCE_STATUS_COLORS[req.status]}`}>
+                        {req.status.replace('_', ' ')}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${MAINTENANCE_PRIORITY_COLORS[req.priority]}`}>
+                        {req.priority}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">{req.description}</p>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>Opened {new Date(req.createdAt).toLocaleDateString()}</span>
+                    {req.resolvedAt && <span>Resolved {new Date(req.resolvedAt).toLocaleDateString()}</span>}
+                  </div>
+                  {(req.repairCost || req.tenantChargeAmount) && (
+                    <div className="flex gap-4 text-xs pt-1 border-t">
+                      {req.repairCost && (
+                        <span className="text-gray-500">Repair cost: <span className="font-medium text-gray-700">${Number(req.repairCost).toLocaleString()}</span></span>
+                      )}
+                      {req.tenantChargeAmount && (
+                        <span className="text-gray-500">Tenant charge: <span className="font-medium text-red-600">${Number(req.tenantChargeAmount).toLocaleString()}</span></span>
+                      )}
+                    </div>
+                  )}
+                  {req.notes && <p className="text-xs text-gray-400 italic">"{req.notes}"</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose: () => void }) {
-  const addItem = useAddLeaseItemForApartment()
-  const removeItem = useRemoveLeaseItemForApartment()
   const increaseRent = useIncreaseRent()
-  const [newItemName, setNewItemName] = useState('')
-  const [newItemAmount, setNewItemAmount] = useState('')
   const [showRentIncrease, setShowRentIncrease] = useState(false)
   const [rentPct, setRentPct] = useState('')
+  const [showHistory, setShowHistory] = useState(false)
+  const [showNewPayment, setShowNewPayment] = useState(false)
 
   const activeLease = apartment.leases?.[0]
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-lg mx-0 sm:mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
@@ -247,7 +472,10 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
             <h3 className="text-xl font-bold text-gray-900">#{apartment.number} — Floor {apartment.floor}</h3>
             <p className="text-sm text-gray-500">{apartment.complex?.name}</p>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowHistory(true)} className="px-3 py-1.5 text-xs font-medium text-gray-600 border rounded-lg hover:bg-gray-50">History</button>
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -319,7 +547,10 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
           {/* Active Lease & Items */}
           {activeLease ? (
             <section>
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Active Lease</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Active Lease</h4>
+                <button onClick={() => setShowNewPayment(true)} className="px-3 py-1.5 text-xs font-medium text-green-700 border border-green-300 rounded-lg hover:bg-green-50">+ New Payment</button>
+              </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -343,65 +574,6 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
                   </div>
                 </div>
 
-                {/* Payment Breakdown */}
-                <div className="pt-3 border-t border-blue-200">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment Breakdown</p>
-                  {activeLease.items && activeLease.items.length > 0 ? (
-                    <div className="space-y-1 mb-3">
-                      {activeLease.items.map((item: any) => (
-                        <div key={item.id} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">{item.name}</span>
-                          <div className="flex items-center gap-3">
-                            <span className="font-medium text-gray-900">${Number(item.amount).toLocaleString()}</span>
-                            <button
-                              onClick={() => removeItem.mutate({ leaseId: activeLease.id, itemId: item.id })}
-                              className="text-xs text-red-400 hover:text-red-600"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      <div className="flex items-center justify-between text-sm font-semibold border-t border-blue-200 pt-1 mt-1">
-                        <span className="text-gray-700">Total</span>
-                        <span className="text-gray-900">
-                          ${activeLease.items.reduce((sum: number, i: any) => sum + Number(i.amount), 0).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 italic mb-2">No items yet.</p>
-                  )}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Item name"
-                      value={newItemName}
-                      onChange={(e: { target: { value: string } }) => setNewItemName(e.target.value)}
-                      className="flex-1 border rounded-lg px-2 py-1 text-xs"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Amount"
-                      value={newItemAmount}
-                      onChange={(e: { target: { value: string } }) => setNewItemAmount(e.target.value)}
-                      className="w-24 border rounded-lg px-2 py-1 text-xs"
-                    />
-                    <button
-                      onClick={() => {
-                        if (!newItemName.trim() || !newItemAmount) return
-                        addItem.mutate(
-                          { leaseId: activeLease.id, data: { name: newItemName.trim(), amount: Number(newItemAmount) } },
-                          { onSuccess: () => { setNewItemName(''); setNewItemAmount('') } }
-                        )
-                      }}
-                      disabled={addItem.isPending}
-                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
               </div>
             </section>
           ) : (
@@ -410,9 +582,13 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
               <p className="text-sm text-gray-400 italic">No active lease — apartment is currently unoccupied.</p>
             </section>
           )}
+
         </div>
       </div>
     </div>
+    {showHistory && <MaintenanceHistoryModal apartment={apartment} onClose={() => setShowHistory(false)} />}
+    {showNewPayment && <NewPaymentModal apartment={apartment} onClose={() => setShowNewPayment(false)} />}
+    </>
   )
 }
 
