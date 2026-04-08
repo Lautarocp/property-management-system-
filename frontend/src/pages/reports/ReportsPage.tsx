@@ -124,15 +124,12 @@ function RevenueByComplexSection() {
                 cy="50%"
                 outerRadius={90}
                 dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={false}
               >
                 {chartData.map((_, i) => (
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Revenue']} />
-              <Legend />
             </PieChart>
           </ResponsiveContainer>
           <div className="w-full lg:w-64 space-y-2">
@@ -304,7 +301,6 @@ function ExpensesByCategorySection({ complexes }: { complexes: any[] }) {
                 ))}
               </Pie>
               <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total']} />
-              <Legend />
             </PieChart>
           </ResponsiveContainer>
           <div className="w-full lg:w-64 space-y-2">
