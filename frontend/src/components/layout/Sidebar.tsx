@@ -11,6 +11,9 @@ const navItems = [
   { to: '/tenants', label: 'Tenants', icon: '👥' },
   { to: '/payments', label: 'Payments', icon: '💰' },
   { to: '/maintenance', label: 'Maintenance', icon: '🔧' },
+  { to: '/expenses', label: 'Expenses', icon: '💸' },
+  { to: '/billing', label: 'Billing', icon: '🗓️' },
+  { to: '/reports', label: 'Reports', icon: '📈' },
 ]
 
 export function Sidebar() {

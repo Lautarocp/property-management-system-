@@ -113,3 +113,34 @@ export interface MaintenanceRequest {
   createdAt: string
   updatedAt: string
 }
+
+export interface TenantBalance {
+  balance: number
+  totalCharged: number
+  totalPaid: number
+}
+
+export interface FinancialSummary {
+  totalRevenue: number
+  totalCharges: number
+  totalOutstanding: number
+  totalExpenses: number
+}
+
+export interface RevenueByMonth {
+  month: string
+  total: number
+}
+
+export interface RevenueByComplex {
+  complexId: string
+  complexName: string
+  total: number
+}
+
+export interface OutstandingBalance {
+  tenantId: string
+  firstName: string
+  lastName: string
+  balance: number
+}

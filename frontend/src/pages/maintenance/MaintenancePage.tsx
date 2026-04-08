@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useMaintenance, useCreateMaintenance, useUpdateMaintenance, useDeleteMaintenance } from '@/hooks/useMaintenance'
 import { useApartments } from '@/hooks/useApartments'
+import { useFiltersStore } from '@/store/filters.store'
 import type { MaintenanceRequest } from '@/types'
 import type { CreateMaintenancePayload } from '@/api/maintenance.api'
 
@@ -320,8 +321,9 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
 export function MaintenancePage() {
   const [showCreate, setShowCreate] = useState(false)
   const [viewingId, setViewingId] = useState<string | null>(null)
-  const [filterApt, setFilterApt] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
+  const filterApt = useFiltersStore(s => s.maintenance.apartmentId)
+  const filterStatus = useFiltersStore(s => s.maintenance.status)
+  const setMaintenanceFilter = useFiltersStore(s => s.setMaintenanceFilter)
 
   const { data: requests, isLoading } = useMaintenance()
   const { data: apartments } = useApartments()
@@ -353,13 +355,13 @@ export function MaintenancePage() {
 
       {/* Filters */}
       <div className="flex gap-3 mb-6">
-        <select value={filterApt} onChange={e => setFilterApt(e.target.value)} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
+        <select value={filterApt} onChange={e => setMaintenanceFilter({ apartmentId: e.target.value })} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
           <option value="">All apartments</option>
           {(apartments as any[])?.map((apt: any) => (
             <option key={apt.id} value={apt.id}>{apt.complex?.name} — Unit {apt.number}</option>
           ))}
         </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
+        <select value={filterStatus} onChange={e => setMaintenanceFilter({ status: e.target.value })} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
           <option value="">All statuses</option>
           <option value="OPEN">Open</option>
           <option value="IN_PROGRESS">In Progress</option>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments'
+import { useFiltersStore } from '@/store/filters.store'
 import { leasesApi } from '@/api/leases.api'
 import type { CreatePaymentPayload } from '@/api/payments.api'
 
@@ -295,7 +296,8 @@ function EditPaymentModal({ payment, onClose }: { payment: any; onClose: () => v
 }
 
 export function PaymentsPage() {
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING' | 'OVERDUE' | 'PAID'>('ALL')
+  const activeFilter = useFiltersStore(s => s.payments.status)
+  const setPaymentsFilter = useFiltersStore(s => s.setPaymentsFilter)
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -349,7 +351,7 @@ export function PaymentsPage() {
         {FILTERS.map(f => (
           <button
             key={f}
-            onClick={() => setActiveFilter(f)}
+            onClick={() => setPaymentsFilter({ status: f })}
             className={`px-4 py-1.5 text-sm rounded-full font-medium transition-colors ${
               activeFilter === f
                 ? f === 'OVERDUE' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'

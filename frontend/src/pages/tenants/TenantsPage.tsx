@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
-import { useTenants, useCreateTenant, useUpdateTenant, useDeleteTenant } from '@/hooks/useTenants'
+import { useTenants, useCreateTenant, useUpdateTenant, useDeleteTenant, useTenantBalance } from '@/hooks/useTenants'
 import { usePayments, useMarkAsPaid, useMarkAsUnpaid } from '@/hooks/usePayments'
 import { tenantsApi } from '@/api/tenants.api'
 import type { Tenant } from '@/types'
@@ -112,6 +112,7 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
     queryFn: () => tenantsApi.getOne(tenantId),
   })
   const { data: payments } = usePayments({ tenantId })
+  const { data: balance } = useTenantBalance(tenantId)
   const markAsPaid = useMarkAsPaid()
   const markAsUnpaid = useMarkAsUnpaid()
 
@@ -284,6 +285,36 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
                 </div>
               </section>
             )}
+
+            {/* Financial Balance */}
+            <section>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Financial Balance</h4>
+              {balance ? (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-400 mb-1">Total Charged</p>
+                    <p className="text-base font-bold text-gray-900">${Number(balance.totalCharged).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-400 mb-1">Total Paid</p>
+                    <p className="text-base font-bold text-green-600">${Number(balance.totalPaid).toLocaleString()}</p>
+                  </div>
+                  <div className={`rounded-lg p-3 text-center ${Number(balance.balance) > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                    <p className="text-xs text-gray-400 mb-1">Balance</p>
+                    <p className={`text-base font-bold ${Number(balance.balance) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      ${Number(balance.balance).toLocaleString()}
+                    </p>
+                    <p className="text-xs mt-0.5">
+                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${Number(balance.balance) > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {Number(balance.balance) > 0 ? 'Owes' : 'Paid up'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">No ledger entries yet.</p>
+              )}
+            </section>
 
             {/* Payment History */}
             <section>
