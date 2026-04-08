@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { LedgerService } from '@/ledger/ledger.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { PaymentType, LedgerEntryCategory } from '@prisma/client';
 
 const PAYMENT_INCLUDE = {
   items: { orderBy: { createdAt: 'asc' as const } },
@@ -22,7 +24,21 @@ const PAYMENT_INCLUDE = {
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private ledger: LedgerService,
+  ) {}
+
+  private mapTypeToCategory(type: PaymentType): LedgerEntryCategory {
+    const map: Record<PaymentType, LedgerEntryCategory> = {
+      RENT: 'RENT',
+      DEPOSIT: 'DEPOSIT',
+      MAINTENANCE: 'MAINTENANCE',
+      LATE_FEE: 'EXTRA',
+      OTHER: 'EXTRA',
+    };
+    return map[type] ?? 'EXTRA';
+  }
 
   private async updateOverdue() {
     await this.prisma.payment.updateMany({
@@ -56,7 +72,7 @@ export class PaymentsService {
   async create(dto: CreatePaymentDto) {
     const lease = await this.prisma.lease.findUnique({
       where: { id: dto.leaseId },
-      select: { tenantId: true },
+      select: { tenantId: true, apartmentId: true },
     });
     if (!lease) throw new NotFoundException('Lease not found');
 
@@ -64,7 +80,7 @@ export class PaymentsService {
       ? dto.items.reduce((sum, i) => sum + i.amount, 0)
       : (dto.amount ?? 0);
 
-    return this.prisma.payment.create({
+    const payment = await this.prisma.payment.create({
       data: {
         leaseId: dto.leaseId,
         tenantId: lease.tenantId,
@@ -79,22 +95,73 @@ export class PaymentsService {
       },
       include: PAYMENT_INCLUDE,
     });
+
+    if (amount > 0) {
+      await this.ledger.writeEntry({
+        type: 'CHARGE',
+        category: this.mapTypeToCategory(payment.type),
+        direction: 'DEBIT',
+        amount,
+        description: dto.notes ?? `${payment.type} charge`,
+        referenceId: payment.id,
+        referenceType: 'Payment',
+        tenantId: payment.tenantId,
+        leaseId: dto.leaseId,
+        apartmentId: lease.apartmentId,
+      });
+    }
+
+    return payment;
   }
 
   async markAsPaid(id: string) {
-    await this.findOne(id);
-    return this.prisma.payment.update({
+    const payment = await this.findOne(id);
+    const updated = await this.prisma.payment.update({
       where: { id },
       data: { status: 'PAID', paidDate: new Date() },
     });
+
+    if (Number(payment.amount) > 0) {
+      await this.ledger.writeEntry({
+        type: 'PAYMENT',
+        category: this.mapTypeToCategory(payment.type),
+        direction: 'CREDIT',
+        amount: Number(payment.amount),
+        description: 'Payment received',
+        referenceId: id,
+        referenceType: 'Payment',
+        tenantId: payment.tenantId,
+        leaseId: payment.leaseId,
+        apartmentId: payment.lease.apartment.id,
+      });
+    }
+
+    return updated;
   }
 
   async markAsUnpaid(id: string) {
-    await this.findOne(id);
-    return this.prisma.payment.update({
+    const payment = await this.findOne(id);
+    const updated = await this.prisma.payment.update({
       where: { id },
       data: { status: 'PENDING', paidDate: null },
     });
+
+    if (Number(payment.amount) > 0) {
+      await this.ledger.writeEntry({
+        type: 'PAYMENT',
+        category: this.mapTypeToCategory(payment.type),
+        direction: 'DEBIT',
+        amount: Number(payment.amount),
+        description: 'Payment reversal',
+        referenceId: id,
+        referenceType: 'PaymentReversal',
+        tenantId: payment.tenantId,
+        leaseId: payment.leaseId,
+        apartmentId: payment.lease.apartment.id,
+      });
+    }
+
+    return updated;
   }
 
   async update(id: string, dto: UpdatePaymentDto) {

@@ -68,6 +68,24 @@ enum ExpenseCategory {
   OTHER
 }
 
+enum LedgerEntryType {
+  CHARGE
+  PAYMENT
+}
+
+enum LedgerEntryCategory {
+  RENT
+  MAINTENANCE
+  EXTRA
+  DEPOSIT
+  ADJUSTMENT
+}
+
+enum LedgerEntryDirection {
+  DEBIT
+  CREDIT
+}
+
 model User {
   id          String   @id @default(cuid())
   email       String   @unique
@@ -118,6 +136,7 @@ model Apartment {
 
   leases       Lease[]
   maintenanceRequests MaintenanceRequest[]
+  ledgerEntries LedgerEntry[]
 
   @@unique([complexId, number])
 }
@@ -147,6 +166,7 @@ model Tenant {
   leases      Lease[]
   payments    Payment[]
   maintenanceRequests MaintenanceRequest[]
+  ledgerEntries LedgerEntry[]
 }
 
 model Lease {
@@ -168,6 +188,7 @@ model Lease {
 
   payments      Payment[]
   items         LeaseItem[]
+  ledgerEntries LedgerEntry[]
 }
 
 model LeaseItem {
@@ -225,6 +246,8 @@ model Expense {
 
   complexId   String
   complex     ApartmentComplex @relation(fields: [complexId], references: [id])
+
+  maintenanceRequestId String?
 }
 
 model MaintenanceRequest {
@@ -245,4 +268,34 @@ model MaintenanceRequest {
 
   tenantId     String?
   tenant       Tenant?             @relation(fields: [tenantId], references: [id])
+
+  tenantPercentage  Decimal?  @db.Decimal(5, 2)
+  ownerPercentage   Decimal?  @db.Decimal(5, 2)
+}
+
+model LedgerEntry {
+  id            String               @id @default(cuid())
+  type          LedgerEntryType
+  category      LedgerEntryCategory
+  direction     LedgerEntryDirection
+  amount        Decimal              @db.Decimal(10, 2)
+  description   String?
+  referenceId   String?
+  referenceType String?
+  billingMonth  String?
+
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  leaseId     String?
+  lease       Lease?    @relation(fields: [leaseId], references: [id])
+  apartmentId String
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([leaseId])
+  @@index([apartmentId])
+  @@index([billingMonth])
+  @@unique([leaseId, billingMonth, category, direction], name: "unique_monthly_rent_charge")
 }

@@ -14,4 +14,9 @@ export class DashboardController {
   getStats() {
     return this.service.getStats();
   }
+
+  @Get('financial-summary')
+  getFinancialSummary() {
+    return this.service.getFinancialSummary();
+  }
 }
