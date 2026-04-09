@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense } from '@/hooks/useExpenses'
 import { useFiltersStore } from '@/store/filters.store'
 import { complexesApi } from '@/api/complexes.api'
@@ -15,16 +16,6 @@ const CATEGORY_COLORS: Record<Expense['category'], string> = {
   TAXES: 'bg-red-100 text-red-700',
   STAFF: 'bg-indigo-100 text-indigo-700',
   OTHER: 'bg-gray-100 text-gray-600',
-}
-
-const CATEGORY_LABELS: Record<Expense['category'], string> = {
-  REPAIRS: 'Repairs',
-  UTILITIES: 'Utilities',
-  CLEANING: 'Cleaning',
-  INSURANCE: 'Insurance',
-  TAXES: 'Taxes',
-  STAFF: 'Staff',
-  OTHER: 'Other',
 }
 
 const CATEGORIES = ['REPAIRS', 'UTILITIES', 'CLEANING', 'INSURANCE', 'TAXES', 'STAFF', 'OTHER'] as Expense['category'][]
@@ -42,25 +33,36 @@ function ExpenseForm({
   onCancel: () => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const { register, handleSubmit, formState: { errors } } = useForm<CreateExpensePayload>({
     defaultValues,
   })
+
+  const categoryLabels: Record<string, string> = {
+    REPAIRS: t('expenses.catRepairs'),
+    UTILITIES: t('expenses.catUtilities'),
+    CLEANING: t('expenses.catCleaning'),
+    INSURANCE: t('expenses.catInsurance'),
+    TAXES: t('expenses.catTaxes'),
+    STAFF: t('expenses.catStaff'),
+    OTHER: t('expenses.catOther'),
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenses.descriptionLabel')}</label>
           <input
             {...register('description', { required: true })}
             className="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="e.g. Electrician repair, Water bill..."
+            placeholder={t('expenses.descriptionPlaceholder')}
           />
-          {errors.description && <p className="text-red-500 text-xs mt-1">Required</p>}
+          {errors.description && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenses.amountLabel')}</label>
           <div className="relative">
             <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
             <input
@@ -72,49 +74,49 @@ function ExpenseForm({
               placeholder="0.00"
             />
           </div>
-          {errors.amount && <p className="text-red-500 text-xs mt-1">Required</p>}
+          {errors.amount && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenses.dateLabel')}</label>
           <input
             type="date"
             {...register('date', { required: true })}
             className="w-full border rounded-lg px-3 py-2 text-sm"
           />
-          {errors.date && <p className="text-red-500 text-xs mt-1">Required</p>}
+          {errors.date && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenses.categoryLabel')}</label>
           <select {...register('category')} className="w-full border rounded-lg px-3 py-2 text-sm">
             {CATEGORIES.map(c => (
-              <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+              <option key={c} value={c}>{categoryLabels[c]}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Complex *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenses.complexLabel')}</label>
           <select
             {...register('complexId', { required: true })}
             className="w-full border rounded-lg px-3 py-2 text-sm"
           >
-            <option value="">Select complex...</option>
+            <option value="">{t('expenses.selectComplex')}</option>
             {complexes.map((c: any) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          {errors.complexId && <p className="text-red-500 text-xs mt-1">Required</p>}
+          {errors.complexId && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.notes')}</label>
           <textarea
             {...register('notes')}
             rows={2}
             className="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="Any additional notes..."
+            placeholder={t('expenses.notesPlaceholder')}
           />
         </div>
       </div>
@@ -125,14 +127,14 @@ function ExpenseForm({
           onClick={onCancel}
           className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={isLoading}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
-          {isLoading ? 'Saving...' : 'Save'}
+          {isLoading ? t('common.saving') : t('common.save')}
         </button>
       </div>
     </form>
@@ -140,6 +142,7 @@ function ExpenseForm({
 }
 
 function EditExpenseModal({ expense, complexes, onClose }: { expense: any; complexes: any[]; onClose: () => void }) {
+  const { t } = useTranslation()
   const updateExpense = useUpdateExpense()
 
   const onSubmit = (data: CreateExpensePayload) => {
@@ -152,7 +155,7 @@ function EditExpenseModal({ expense, complexes, onClose }: { expense: any; compl
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
-        <h3 className="text-lg font-semibold mb-4">Edit Expense</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('expenses.editExpense')}</h3>
         <ExpenseForm
           defaultValues={{
             description: expense.description,
@@ -173,6 +176,7 @@ function EditExpenseModal({ expense, complexes, onClose }: { expense: any; compl
 }
 
 export function ExpensesPage() {
+  const { t } = useTranslation()
   const filters = useFiltersStore(s => s.expenses)
   const setFilter = useFiltersStore(s => s.setExpensesFilter)
 
@@ -185,6 +189,16 @@ export function ExpensesPage() {
   const createExpense = useCreateExpense()
   const deleteExpense = useDeleteExpense()
 
+  const categoryLabels: Record<string, string> = {
+    REPAIRS: t('expenses.catRepairs'),
+    UTILITIES: t('expenses.catUtilities'),
+    CLEANING: t('expenses.catCleaning'),
+    INSURANCE: t('expenses.catInsurance'),
+    TAXES: t('expenses.catTaxes'),
+    STAFF: t('expenses.catStaff'),
+    OTHER: t('expenses.catOther'),
+  }
+
   const handleCreate = (data: CreateExpensePayload) => {
     createExpense.mutate(
       { ...data, amount: Number(data.amount) },
@@ -193,7 +207,7 @@ export function ExpensesPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this expense?')) deleteExpense.mutate(id)
+    if (confirm(t('expenses.deleteConfirm'))) deleteExpense.mutate(id)
   }
 
   const total = (expenses as any[] ?? []).reduce((sum, e) => sum + Number(e.amount), 0)
@@ -210,27 +224,26 @@ export function ExpensesPage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Expenses</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('expenses.title')}</h2>
           <p className="text-gray-500 text-sm mt-1">
-            {expenses?.length ?? 0} records · Total: ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {t('expenses.subtitle', { count: expenses?.length ?? 0, total: total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
         >
-          + New Expense
+          {t('expenses.newExpense')}
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3 mb-6">
         <select
           value={filters.complexId}
           onChange={e => setFilter({ complexId: e.target.value })}
           className="border rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
         >
-          <option value="">All Complexes</option>
+          <option value="">{t('common.allComplexes')}</option>
           {(complexes as any[]).map((c: any) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -240,9 +253,9 @@ export function ExpensesPage() {
           onChange={e => setFilter({ category: e.target.value })}
           className="border rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
         >
-          <option value="">All Categories</option>
+          <option value="">{t('expenses.allCategories')}</option>
           {CATEGORIES.map(c => (
-            <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+            <option key={c} value={c}>{categoryLabels[c]}</option>
           ))}
         </select>
         {(filters.complexId || filters.category) && (
@@ -250,15 +263,14 @@ export function ExpensesPage() {
             onClick={() => setFilter({ complexId: '', category: '' })}
             className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border rounded-lg hover:bg-gray-50"
           >
-            Clear
+            {t('common.clear')}
           </button>
         )}
       </div>
 
-      {/* Create form */}
       {showCreate && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">New Expense</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('expenses.newExpenseTitle')}</h3>
           <ExpenseForm
             complexes={complexes as any[]}
             onSubmit={handleCreate}
@@ -269,21 +281,21 @@ export function ExpensesPage() {
       )}
 
       {isLoading ? (
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-gray-400">{t('common.loading')}</div>
       ) : !expenses?.length ? (
-        <div className="text-center py-16 text-gray-400">No expenses found.</div>
+        <div className="text-center py-16 text-gray-400">{t('expenses.noExpenses')}</div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Complex</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3 text-left">Notes</th>
-                <th className="px-4 py-3 text-left">Actions</th>
+                <th className="px-4 py-3 text-left">{t('expenses.colDate')}</th>
+                <th className="px-4 py-3 text-left">{t('expenses.colDescription')}</th>
+                <th className="px-4 py-3 text-left">{t('expenses.colCategory')}</th>
+                <th className="px-4 py-3 text-left">{t('expenses.colComplex')}</th>
+                <th className="px-4 py-3 text-right">{t('expenses.colAmount')}</th>
+                <th className="px-4 py-3 text-left">{t('expenses.colNotes')}</th>
+                <th className="px-4 py-3 text-left">{t('expenses.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -295,7 +307,7 @@ export function ExpensesPage() {
                   <td className="px-4 py-3 font-medium text-gray-900">{expense.description}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_COLORS[expense.category as Expense['category']] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {CATEGORY_LABELS[expense.category as Expense['category']] ?? expense.category}
+                      {categoryLabels[expense.category] ?? expense.category}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{expense.complex?.name ?? '—'}</td>
@@ -311,14 +323,14 @@ export function ExpensesPage() {
                         onClick={() => setEditing(expense)}
                         className="text-xs text-blue-600 hover:underline"
                       >
-                        Edit
+                        {t('common.edit')}
                       </button>
                       <button
                         onClick={() => handleDelete(expense.id)}
                         disabled={deleteExpense.isPending}
                         className="text-xs text-red-500 hover:underline disabled:opacity-50"
                       >
-                        Delete
+                        {t('common.delete')}
                       </button>
                     </div>
                   </td>

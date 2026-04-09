@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { useMaintenance, useCreateMaintenance, useUpdateMaintenance, useDeleteMaintenance } from '@/hooks/useMaintenance'
 import { useApartments } from '@/hooks/useApartments'
 import { useFiltersStore } from '@/store/filters.store'
@@ -29,6 +30,7 @@ function MaintenanceForm({
   onCancel: () => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const { data: apartments } = useApartments()
   const { register, handleSubmit, formState: { errors } } = useForm<CreateMaintenancePayload>()
 
@@ -36,52 +38,52 @@ function MaintenanceForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Apartment *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('maintenance.apartmentLabel')}</label>
           <select {...register('apartmentId', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm">
-            <option value="">Select apartment...</option>
+            <option value="">{t('maintenance.selectApartment')}</option>
             {(apartments as any[])?.map((apt: any) => (
               <option key={apt.id} value={apt.id}>
-                {apt.complex?.name} — Unit {apt.number}
+                {apt.complex?.name} — {t('common.unit')} {apt.number}
               </option>
             ))}
           </select>
-          {errors.apartmentId && <p className="text-red-500 text-xs mt-1">Required</p>}
+          {errors.apartmentId && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-          <input {...register('title', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="e.g. Broken pipe in kitchen" />
-          {errors.title && <p className="text-red-500 text-xs mt-1">Required</p>}
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('maintenance.titleLabel')}</label>
+          <input {...register('title', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={t('maintenance.titlePlaceholder')} />
+          {errors.title && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-          <textarea {...register('description', { required: true })} rows={3} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Describe the issue in detail..." />
-          {errors.description && <p className="text-red-500 text-xs mt-1">Required</p>}
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('maintenance.descriptionLabel')}</label>
+          <textarea {...register('description', { required: true })} rows={3} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={t('maintenance.descriptionPlaceholder')} />
+          {errors.description && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('maintenance.priorityLabel')}</label>
           <select {...register('priority')} className="w-full border rounded-lg px-3 py-2 text-sm">
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-            <option value="URGENT">Urgent</option>
+            <option value="LOW">{t('maintenance.priorityLow')}</option>
+            <option value="MEDIUM">{t('maintenance.priorityMedium')}</option>
+            <option value="HIGH">{t('maintenance.priorityHigh')}</option>
+            <option value="URGENT">{t('maintenance.priorityUrgent')}</option>
           </select>
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-          <textarea {...register('notes')} rows={2} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Additional notes..." />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.notes')}</label>
+          <textarea {...register('notes')} rows={2} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={t('maintenance.notesPlaceholder')} />
         </div>
       </div>
 
       <div className="flex gap-3 justify-end pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-          {isLoading ? 'Saving...' : 'Save'}
+          {isLoading ? t('common.saving') : t('common.save')}
         </button>
       </div>
     </form>
@@ -89,14 +91,13 @@ function MaintenanceForm({
 }
 
 function DetailPanel({ request, onClose }: { request: any; onClose: () => void }) {
+  const { t } = useTranslation()
   const updateMaintenance = useUpdateMaintenance()
 
-  // Resolve form state
   const [resolvingForm, setResolvingForm] = useState(false)
   const [repairCost, setRepairCost] = useState('')
   const [tenantCharge, setTenantCharge] = useState('')
 
-  // Inline edit for costs after resolved
   const [editingCharge, setEditingCharge] = useState(false)
   const [chargeValue, setChargeValue] = useState('')
 
@@ -120,6 +121,13 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
     )
   }
 
+  const statusLabels: Record<string, string> = {
+    OPEN: t('maintenance.statusOpen'),
+    IN_PROGRESS: t('maintenance.statusInProgress'),
+    RESOLVED: t('maintenance.statusResolved'),
+    CLOSED: t('maintenance.statusClosed'),
+  }
+
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -131,7 +139,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
         <div className="p-5 space-y-4">
           <div className="flex gap-2 flex-wrap">
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[request.status as MaintenanceRequest['status']]}`}>
-              {request.status.replace('_', ' ')}
+              {statusLabels[request.status] ?? request.status.replace('_', ' ')}
             </span>
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${PRIORITY_COLORS[request.priority as MaintenanceRequest['priority']]}`}>
               {request.priority}
@@ -139,36 +147,35 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Apartment</p>
-            <p className="text-sm text-gray-900">{request.apartment?.complex?.name} — Unit {request.apartment?.number}</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.apartmentSection')}</p>
+            <p className="text-sm text-gray-900">{request.apartment?.complex?.name} — {t('common.unit')} {request.apartment?.number}</p>
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Description</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.descriptionSection')}</p>
             <p className="text-sm text-gray-700">{request.description}</p>
           </div>
 
           {request.tenant && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tenant</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.tenantSection')}</p>
               <p className="text-sm text-gray-900">{request.tenant.firstName} {request.tenant.lastName}</p>
             </div>
           )}
 
-          {/* Costs — only shown once resolved */}
           {isResolved && (
             <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-3">
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Repair Cost</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.repairCost')}</p>
                 <p className="text-lg font-bold text-gray-900">
                   {request.repairCost != null ? `$${Number(request.repairCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
                 </p>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tenant Charge</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('maintenance.tenantCharge')}</p>
                   {!editingCharge && (
-                    <button onClick={() => { setEditingCharge(true); setChargeValue(String(Number(request.tenantChargeAmount ?? 0))) }} className="text-xs text-indigo-600 hover:underline">Edit</button>
+                    <button onClick={() => { setEditingCharge(true); setChargeValue(String(Number(request.tenantChargeAmount ?? 0))) }} className="text-xs text-indigo-600 hover:underline">{t('common.edit')}</button>
                   )}
                 </div>
                 {editingCharge ? (
@@ -181,7 +188,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                       autoFocus
                     />
                     <button onClick={saveCharge} disabled={updateMaintenance.isPending} className="px-3 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                      {updateMaintenance.isPending ? '...' : 'Save'}
+                      {updateMaintenance.isPending ? '...' : t('common.save')}
                     </button>
                     <button onClick={() => setEditingCharge(false)} className="px-2 py-1 text-xs text-gray-500 border rounded-lg hover:bg-gray-50">✕</button>
                   </div>
@@ -192,7 +199,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                     </p>
                     {Number(request.repairCost) > 0 && Number(request.tenantChargeAmount) > 0 && (
                       <p className="text-xs text-gray-400">
-                        {((Number(request.tenantChargeAmount) / Number(request.repairCost)) * 100).toFixed(0)}% of total
+                        {t('maintenance.percentOfTotal', { percent: ((Number(request.tenantChargeAmount) / Number(request.repairCost)) * 100).toFixed(0) })}
                       </p>
                     )}
                   </>
@@ -203,47 +210,45 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
 
           {request.notes && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Notes</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.notesSection')}</p>
               <p className="text-sm text-gray-600">{request.notes}</p>
             </div>
           )}
 
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Opened</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.opened')}</p>
             <p className="text-sm text-gray-600">{new Date(request.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
 
           {request.resolvedAt && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Resolved</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.resolved')}</p>
               <p className="text-sm text-gray-600">{new Date(request.resolvedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
           )}
 
-          {/* Status actions */}
           {request.status === 'CLOSED' && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Update Status</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('maintenance.updateStatus')}</p>
               <button
                 onClick={() => updateMaintenance.mutate({ id: request.id, data: { status: 'OPEN' } })}
                 disabled={updateMaintenance.isPending}
                 className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                Reopen
+                {t('maintenance.reopen')}
               </button>
             </div>
           )}
           {request.status !== 'CLOSED' && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Update Status</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('maintenance.updateStatus')}</p>
 
-              {/* Resolve form — enters costs before resolving */}
               {resolvingForm ? (
                 <div className="bg-green-50 rounded-lg p-3 space-y-3">
-                  <p className="text-sm font-medium text-gray-700">Enter repair costs to resolve</p>
+                  <p className="text-sm font-medium text-gray-700">{t('maintenance.enterRepairCosts')}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Repair Cost ($)</label>
+                      <label className="block text-xs text-gray-600 mb-1">{t('maintenance.repairCostLabel')}</label>
                       <input
                         type="number" step="0.01" min="0"
                         value={repairCost}
@@ -253,7 +258,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Tenant Charge ($)</label>
+                      <label className="block text-xs text-gray-600 mb-1">{t('maintenance.tenantChargeLabel')}</label>
                       <input
                         type="number" step="0.01" min="0"
                         value={tenantCharge}
@@ -265,7 +270,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                   </div>
                   {Number(repairCost) > 0 && Number(tenantCharge) > 0 && (
                     <p className="text-xs text-gray-500">
-                      Tenant covers {((Number(tenantCharge) / Number(repairCost)) * 100).toFixed(0)}% of repair cost
+                      {t('maintenance.tenantCovers', { percent: ((Number(tenantCharge) / Number(repairCost)) * 100).toFixed(0) })}
                     </p>
                   )}
                   <div className="flex gap-2">
@@ -274,10 +279,10 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                       disabled={updateMaintenance.isPending}
                       className="px-4 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                     >
-                      {updateMaintenance.isPending ? 'Saving...' : 'Confirm Resolved'}
+                      {updateMaintenance.isPending ? t('common.saving') : t('maintenance.confirmResolved')}
                     </button>
                     <button onClick={() => setResolvingForm(false)} className="px-3 py-1.5 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -290,7 +295,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                       disabled={updateMaintenance.isPending}
                       className="px-3 py-1 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-50"
                     >
-                      {s.replace('_', ' ')}
+                      {statusLabels[s]}
                     </button>
                   ))}
                   {request.status !== 'RESOLVED' && (
@@ -298,7 +303,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                       onClick={() => setResolvingForm(true)}
                       className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
-                      RESOLVED
+                      {t('maintenance.statusResolved').toUpperCase()}
                     </button>
                   )}
                   <button
@@ -306,7 +311,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                     disabled={updateMaintenance.isPending}
                     className="px-3 py-1 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-50"
                   >
-                    CLOSED
+                    {t('maintenance.statusClosed').toUpperCase()}
                   </button>
                 </div>
               )}
@@ -319,6 +324,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
 }
 
 export function MaintenancePage() {
+  const { t } = useTranslation()
   const [showCreate, setShowCreate] = useState(false)
   const [viewingId, setViewingId] = useState<string | null>(null)
   const filterApt = useFiltersStore(s => s.maintenance.apartmentId)
@@ -334,8 +340,14 @@ export function MaintenancePage() {
     .filter((r: any) => !filterApt || r.apartmentId === filterApt)
     .filter((r: any) => !filterStatus || r.status === filterStatus)
 
-  // Always derived from live query data — stays in sync after mutations
   const viewing = viewingId ? (requests as any[] ?? []).find((r: any) => r.id === viewingId) ?? null : null
+
+  const statusLabels: Record<string, string> = {
+    OPEN: t('maintenance.statusOpen'),
+    IN_PROGRESS: t('maintenance.statusInProgress'),
+    RESOLVED: t('maintenance.statusResolved'),
+    CLOSED: t('maintenance.statusClosed'),
+  }
 
   const handleCreate = (data: CreateMaintenancePayload) => {
     createMaintenance.mutate(data, { onSuccess: () => setShowCreate(false) })
@@ -345,35 +357,33 @@ export function MaintenancePage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Maintenance</h2>
-          <p className="text-gray-500 text-sm mt-1">{filtered.length} requests</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('maintenance.title')}</h2>
+          <p className="text-gray-500 text-sm mt-1">{t('maintenance.subtitle', { count: filtered.length })}</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-          + New Request
+          {t('maintenance.newRequest')}
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3 mb-6">
         <select value={filterApt} onChange={e => setMaintenanceFilter({ apartmentId: e.target.value })} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
-          <option value="">All apartments</option>
+          <option value="">{t('maintenance.allApartments')}</option>
           {(apartments as any[])?.map((apt: any) => (
-            <option key={apt.id} value={apt.id}>{apt.complex?.name} — Unit {apt.number}</option>
+            <option key={apt.id} value={apt.id}>{apt.complex?.name} — {t('common.unit')} {apt.number}</option>
           ))}
         </select>
         <select value={filterStatus} onChange={e => setMaintenanceFilter({ status: e.target.value })} className="border rounded-lg px-3 py-2 text-sm text-gray-700">
-          <option value="">All statuses</option>
-          <option value="OPEN">Open</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="RESOLVED">Resolved</option>
-          <option value="CLOSED">Closed</option>
+          <option value="">{t('maintenance.allStatuses')}</option>
+          <option value="OPEN">{t('maintenance.statusOpen')}</option>
+          <option value="IN_PROGRESS">{t('maintenance.statusInProgress')}</option>
+          <option value="RESOLVED">{t('maintenance.statusResolved')}</option>
+          <option value="CLOSED">{t('maintenance.statusClosed')}</option>
         </select>
       </div>
 
-      {/* Create form */}
       {showCreate && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">New Maintenance Request</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('maintenance.newRequestTitle')}</h3>
           <MaintenanceForm
             onSubmit={handleCreate}
             onCancel={() => setShowCreate(false)}
@@ -382,11 +392,10 @@ export function MaintenancePage() {
         </div>
       )}
 
-      {/* List */}
       {isLoading ? (
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-gray-400">{t('common.loading')}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">No maintenance requests found.</div>
+        <div className="text-center py-16 text-gray-400">{t('maintenance.noRequests')}</div>
       ) : (
         <div className="space-y-3">
           {filtered.map((req: any) => (
@@ -399,7 +408,7 @@ export function MaintenancePage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[req.status as MaintenanceRequest['status']]}`}>
-                      {req.status.replace('_', ' ')}
+                      {statusLabels[req.status] ?? req.status.replace('_', ' ')}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[req.priority as MaintenanceRequest['priority']]}`}>
                       {req.priority}
@@ -408,7 +417,7 @@ export function MaintenancePage() {
                   <p className="font-medium text-gray-900">{req.title}</p>
                   <p className="text-sm text-gray-500 truncate">{req.description}</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {req.apartment?.complex?.name} — Unit {req.apartment?.number}
+                    {req.apartment?.complex?.name} — {t('common.unit')} {req.apartment?.number}
                     {req.tenant && ` · ${req.tenant.firstName} ${req.tenant.lastName}`}
                   </p>
                 </div>
@@ -418,14 +427,14 @@ export function MaintenancePage() {
                     <p className="text-sm font-semibold text-gray-900">${Number(req.repairCost).toLocaleString()}</p>
                   )}
                   {(req.status === 'RESOLVED' || req.status === 'CLOSED') && req.tenantChargeAmount != null && (
-                    <p className="text-xs text-indigo-600">Tenant: ${Number(req.tenantChargeAmount).toLocaleString()}</p>
+                    <p className="text-xs text-indigo-600">{t('maintenance.tenantChargeAmount', { amount: Number(req.tenantChargeAmount).toLocaleString() })}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">{new Date(req.createdAt).toLocaleDateString()}</p>
                   <button
-                    onClick={e => { e.stopPropagation(); if (confirm('Delete this request?')) deleteMaintenance.mutate(req.id) }}
+                    onClick={e => { e.stopPropagation(); if (confirm(t('maintenance.deleteConfirm'))) deleteMaintenance.mutate(req.id) }}
                     className="text-xs text-red-500 hover:underline mt-1"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>

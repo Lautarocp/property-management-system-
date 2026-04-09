@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useDashboardStats, useFinancialSummary } from '@/hooks/useDashboard'
 
 interface StatCardProps {
@@ -47,57 +48,57 @@ function FinancialCard({ label, value, icon, color, valueClass = 'text-gray-900'
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const { data: stats, isLoading } = useDashboardStats()
   const { data: financial, isLoading: financialLoading } = useFinancialSummary()
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h2>
-      <p className="text-gray-500 mb-8">Overview of your properties</p>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('dashboard.title')}</h2>
+      <p className="text-gray-500 mb-8">{t('dashboard.subtitle')}</p>
 
       {isLoading ? (
-        <div className="text-gray-400">Loading stats...</div>
+        <div className="text-gray-400">{t('dashboard.loadingStats')}</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <StatCard label="Complexes" value={stats?.totalComplexes} icon="🏢" color="bg-blue-100" />
-          <StatCard label="Total Apartments" value={stats?.totalApartments} icon="🏠" color="bg-purple-100" />
-          <StatCard label="Available" value={stats?.availableApartments} icon="✅" color="bg-green-100" />
-          <StatCard label="Occupied" value={stats?.occupiedApartments} icon="🔑" color="bg-orange-100" />
-          <StatCard label="Tenants" value={stats?.totalTenants} icon="👥" color="bg-cyan-100" />
-          <StatCard label="Active Leases" value={stats?.activeLeases} icon="📄" color="bg-indigo-100" />
-          <StatCard label="Pending Payments" value={stats?.pendingPayments} icon="💰" color="bg-yellow-100" />
-          <StatCard label="Overdue Payments" value={stats?.overduePayments} icon="⚠️" color="bg-red-100" />
+          <StatCard label={t('dashboard.complexes')} value={stats?.totalComplexes} icon="🏢" color="bg-blue-100" />
+          <StatCard label={t('dashboard.totalApartments')} value={stats?.totalApartments} icon="🏠" color="bg-purple-100" />
+          <StatCard label={t('dashboard.available')} value={stats?.availableApartments} icon="✅" color="bg-green-100" />
+          <StatCard label={t('dashboard.occupied')} value={stats?.occupiedApartments} icon="🔑" color="bg-orange-100" />
+          <StatCard label={t('dashboard.tenants')} value={stats?.totalTenants} icon="👥" color="bg-cyan-100" />
+          <StatCard label={t('dashboard.activeLeases')} value={stats?.activeLeases} icon="📄" color="bg-indigo-100" />
+          <StatCard label={t('dashboard.pendingPayments')} value={stats?.pendingPayments} icon="💰" color="bg-yellow-100" />
+          <StatCard label={t('dashboard.overduePayments')} value={stats?.overduePayments} icon="⚠️" color="bg-red-100" />
         </div>
       )}
 
-      {/* Financial summary */}
-      <h3 className="text-lg font-semibold text-gray-900 mt-10 mb-5">Financial Summary</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mt-10 mb-5">{t('dashboard.financialSummary')}</h3>
       {financialLoading ? (
-        <div className="text-gray-400 text-sm">Loading financial data...</div>
+        <div className="text-gray-400 text-sm">{t('dashboard.loadingFinancial')}</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <FinancialCard
-            label="Total Revenue"
+            label={t('dashboard.totalRevenue')}
             value={financial?.totalRevenue}
             icon="📈"
             color="bg-green-100"
             valueClass="text-green-700"
           />
           <FinancialCard
-            label="Total Charges"
+            label={t('dashboard.totalCharges')}
             value={financial?.totalCharges}
             icon="📋"
             color="bg-blue-100"
           />
           <FinancialCard
-            label="Outstanding"
+            label={t('dashboard.outstanding')}
             value={financial?.totalOutstanding}
             icon="⏳"
             color="bg-red-100"
             valueClass={financial?.totalOutstanding ? 'text-red-600' : 'text-gray-900'}
           />
           <FinancialCard
-            label="Total Expenses"
+            label={t('dashboard.totalExpenses')}
             value={financial?.totalExpenses}
             icon="💸"
             color="bg-orange-100"

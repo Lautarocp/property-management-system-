@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from 'recharts'
 import {
   useRevenueByMonth,
@@ -14,16 +15,6 @@ import {
 import { complexesApi } from '@/api/complexes.api'
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#6b7280']
-
-const CATEGORY_LABELS: Record<string, string> = {
-  REPAIRS: 'Repairs',
-  UTILITIES: 'Utilities',
-  CLEANING: 'Cleaning',
-  INSURANCE: 'Insurance',
-  TAXES: 'Taxes',
-  STAFF: 'Staff',
-  OTHER: 'Other',
-}
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
@@ -47,6 +38,7 @@ function EmptyState({ message }: { message: string }) {
 }
 
 function RevenueByMonthSection({ complexes }: { complexes: any[] }) {
+  const { t } = useTranslation()
   const [complexId, setComplexId] = useState('')
   const { data, isLoading } = useRevenueByMonth(complexId || undefined)
 
@@ -61,15 +53,15 @@ function RevenueByMonthSection({ complexes }: { complexes: any[] }) {
     <section className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-start justify-between mb-5">
         <SectionHeader
-          title="Revenue by Month"
-          subtitle={`Total: $${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          title={t('reports.revenueByMonth')}
+          subtitle={t('reports.revenueTotal', { total: totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
         />
         <select
           value={complexId}
           onChange={e => setComplexId(e.target.value)}
           className="border rounded-lg px-3 py-1.5 text-sm text-gray-700"
         >
-          <option value="">All Complexes</option>
+          <option value="">{t('common.allComplexes')}</option>
           {complexes.map((c: any) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -79,7 +71,7 @@ function RevenueByMonthSection({ complexes }: { complexes: any[] }) {
       {isLoading ? (
         <LoadingCard />
       ) : !chartData.length ? (
-        <EmptyState message="No revenue data yet." />
+        <EmptyState message={t('reports.noRevenue')} />
       ) : (
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={chartData}>
@@ -99,6 +91,7 @@ function RevenueByMonthSection({ complexes }: { complexes: any[] }) {
 }
 
 function RevenueByComplexSection() {
+  const { t } = useTranslation()
   const { data, isLoading } = useRevenueByComplex()
 
   const chartData = (data ?? []).map(d => ({
@@ -108,12 +101,12 @@ function RevenueByComplexSection() {
 
   return (
     <section className="bg-white rounded-xl shadow-sm p-6">
-      <SectionHeader title="Revenue by Complex" />
+      <SectionHeader title={t('reports.revenueByComplex')} />
 
       {isLoading ? (
         <LoadingCard />
       ) : !chartData.length ? (
-        <EmptyState message="No revenue data yet." />
+        <EmptyState message={t('reports.noRevenue')} />
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 items-center">
           <ResponsiveContainer width="100%" height={220}>
@@ -150,6 +143,7 @@ function RevenueByComplexSection() {
 }
 
 function OutstandingBalancesSection() {
+  const { t } = useTranslation()
   const { data, isLoading } = useOutstandingBalances()
 
   const sorted = [...(data ?? [])].sort((a, b) => Number(b.balance) - Number(a.balance))
@@ -157,22 +151,22 @@ function OutstandingBalancesSection() {
   return (
     <section className="bg-white rounded-xl shadow-sm p-6">
       <SectionHeader
-        title="Outstanding Balances"
-        subtitle="Tenants with unpaid charges"
+        title={t('reports.outstandingBalances')}
+        subtitle={t('reports.outstandingSubtitle')}
       />
 
       {isLoading ? (
         <LoadingCard />
       ) : !sorted.length ? (
-        <EmptyState message="All balances are clear." />
+        <EmptyState message={t('reports.allClear')} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
-                <th className="px-4 py-2 text-left">Tenant</th>
-                <th className="px-4 py-2 text-right">Balance</th>
-                <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-left">{t('reports.colTenant')}</th>
+                <th className="px-4 py-2 text-right">{t('reports.colBalance')}</th>
+                <th className="px-4 py-2 text-left">{t('reports.colStatus')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -188,7 +182,7 @@ function OutstandingBalancesSection() {
                     </td>
                     <td className="px-4 py-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${balance > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                        {balance > 0 ? 'Owes' : 'Paid up'}
+                        {balance > 0 ? t('reports.owes') : t('reports.paidUp')}
                       </span>
                     </td>
                   </tr>
@@ -203,6 +197,7 @@ function OutstandingBalancesSection() {
 }
 
 function MaintenanceCostsSection({ complexes }: { complexes: any[] }) {
+  const { t } = useTranslation()
   const [complexId, setComplexId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -210,7 +205,7 @@ function MaintenanceCostsSection({ complexes }: { complexes: any[] }) {
 
   return (
     <section className="bg-white rounded-xl shadow-sm p-6">
-      <SectionHeader title="Maintenance Costs" subtitle="Total repair costs charged to tenants" />
+      <SectionHeader title={t('reports.maintenanceCosts')} subtitle={t('reports.maintenanceCostsSubtitle')} />
 
       <div className="flex flex-wrap gap-3 mb-6">
         <select
@@ -218,7 +213,7 @@ function MaintenanceCostsSection({ complexes }: { complexes: any[] }) {
           onChange={e => setComplexId(e.target.value)}
           className="border rounded-lg px-3 py-1.5 text-sm text-gray-700"
         >
-          <option value="">All Complexes</option>
+          <option value="">{t('common.allComplexes')}</option>
           {complexes.map((c: any) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -228,14 +223,14 @@ function MaintenanceCostsSection({ complexes }: { complexes: any[] }) {
           value={from}
           onChange={e => setFrom(e.target.value)}
           className="border rounded-lg px-3 py-1.5 text-sm text-gray-700"
-          placeholder="From"
+          placeholder={t('reports.from')}
         />
         <input
           type="date"
           value={to}
           onChange={e => setTo(e.target.value)}
           className="border rounded-lg px-3 py-1.5 text-sm text-gray-700"
-          placeholder="To"
+          placeholder={t('reports.to')}
         />
       </div>
 
@@ -245,7 +240,7 @@ function MaintenanceCostsSection({ complexes }: { complexes: any[] }) {
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 inline-flex items-center gap-4">
           <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-2xl">🔧</div>
           <div>
-            <p className="text-sm text-gray-500">Total Maintenance Charges</p>
+            <p className="text-sm text-gray-500">{t('reports.totalMaintenanceCharges')}</p>
             <p className="text-3xl font-bold text-gray-900">
               ${Number(data?.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
@@ -257,24 +252,35 @@ function MaintenanceCostsSection({ complexes }: { complexes: any[] }) {
 }
 
 function ExpensesByCategorySection({ complexes }: { complexes: any[] }) {
+  const { t } = useTranslation()
   const [complexId, setComplexId] = useState('')
   const { data, isLoading } = useExpensesByCategory(complexId || undefined)
 
+  const categoryLabels: Record<string, string> = {
+    REPAIRS: t('expenses.catRepairs'),
+    UTILITIES: t('expenses.catUtilities'),
+    CLEANING: t('expenses.catCleaning'),
+    INSURANCE: t('expenses.catInsurance'),
+    TAXES: t('expenses.catTaxes'),
+    STAFF: t('expenses.catStaff'),
+    OTHER: t('expenses.catOther'),
+  }
+
   const chartData = (data ?? []).map(d => ({
-    name: CATEGORY_LABELS[d.category] ?? d.category,
+    name: categoryLabels[d.category] ?? d.category,
     value: Number(d.total),
   }))
 
   return (
     <section className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-start justify-between mb-5">
-        <SectionHeader title="Expenses by Category" />
+        <SectionHeader title={t('reports.expensesByCategory')} />
         <select
           value={complexId}
           onChange={e => setComplexId(e.target.value)}
           className="border rounded-lg px-3 py-1.5 text-sm text-gray-700"
         >
-          <option value="">All Complexes</option>
+          <option value="">{t('common.allComplexes')}</option>
           {complexes.map((c: any) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -284,7 +290,7 @@ function ExpensesByCategorySection({ complexes }: { complexes: any[] }) {
       {isLoading ? (
         <LoadingCard />
       ) : !chartData.length ? (
-        <EmptyState message="No expense data yet." />
+        <EmptyState message={t('reports.noExpenses')} />
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 items-center">
           <ResponsiveContainer width="100%" height={220}>
@@ -321,13 +327,14 @@ function ExpensesByCategorySection({ complexes }: { complexes: any[] }) {
 }
 
 export function ReportsPage() {
+  const { t } = useTranslation()
   const { data: complexes = [] } = useQuery({ queryKey: ['complexes'], queryFn: complexesApi.getAll })
 
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Reports</h2>
-        <p className="text-gray-500 text-sm mt-1">Financial analytics across your properties</p>
+        <h2 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h2>
+        <p className="text-gray-500 text-sm mt-1">{t('reports.subtitle')}</p>
       </div>
 
       <RevenueByMonthSection complexes={complexes as any[]} />

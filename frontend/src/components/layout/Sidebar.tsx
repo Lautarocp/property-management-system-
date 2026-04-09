@@ -1,24 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { useLogout } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/auth.store'
 import { authApi } from '@/api/auth.api'
 
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: '📊' },
-  { to: '/complexes', label: 'Complexes', icon: '🏢' },
-  { to: '/apartments', label: 'Apartments', icon: '🏠' },
-  { to: '/tenants', label: 'Tenants', icon: '👥' },
-  { to: '/payments', label: 'Payments', icon: '💰' },
-  { to: '/maintenance', label: 'Maintenance', icon: '🔧' },
-  { to: '/expenses', label: 'Expenses', icon: '💸' },
-  { to: '/billing', label: 'Billing', icon: '🗓️' },
-  { to: '/reports', label: 'Reports', icon: '📈' },
-]
-
 export function Sidebar() {
   const logout = useLogout()
   const token = useAuthStore(s => s.token)
+  const { t, i18n } = useTranslation()
   const { data: user } = useQuery({
     queryKey: ['me'],
     queryFn: authApi.me,
@@ -26,11 +16,29 @@ export function Sidebar() {
     staleTime: Infinity,
   })
 
+  const navItems = [
+    { to: '/', label: t('nav.dashboard'), icon: '📊' },
+    { to: '/complexes', label: t('nav.complexes'), icon: '🏢' },
+    { to: '/apartments', label: t('nav.apartments'), icon: '🏠' },
+    { to: '/tenants', label: t('nav.tenants'), icon: '👥' },
+    { to: '/payments', label: t('nav.payments'), icon: '💰' },
+    { to: '/maintenance', label: t('nav.maintenance'), icon: '🔧' },
+    { to: '/expenses', label: t('nav.expenses'), icon: '💸' },
+    { to: '/billing', label: t('nav.billing'), icon: '🗓️' },
+    { to: '/reports', label: t('nav.reports'), icon: '📈' },
+  ]
+
+  const toggleLanguage = () => {
+    const next = i18n.language === 'en' ? 'es' : 'en'
+    i18n.changeLanguage(next)
+    localStorage.setItem('pms-lang', next)
+  }
+
   return (
     <aside className="w-64 bg-gray-900 text-white flex flex-col h-full">
       <div className="p-6 border-b border-gray-700">
-        <h1 className="text-xl font-bold text-white">PMS</h1>
-        <p className="text-xs text-gray-400 mt-1">Property Management</p>
+        <h1 className="text-xl font-bold text-white">{t('nav.appName')}</h1>
+        <p className="text-xs text-gray-400 mt-1">{t('nav.propertyManagement')}</p>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
@@ -70,12 +78,21 @@ export function Sidebar() {
         ) : (
           <div className="h-8 bg-gray-800 rounded animate-pulse" />
         )}
-        <button
-          onClick={logout}
-          className="w-full text-left text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          Sign out →
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={logout}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            {t('nav.signOut')}
+          </button>
+          <button
+            onClick={toggleLanguage}
+            className="text-xs text-gray-400 hover:text-white border border-gray-600 hover:border-gray-400 rounded px-2 py-0.5 transition-colors font-medium"
+            title={i18n.language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
+          >
+            {i18n.language === 'en' ? 'ES' : 'EN'}
+          </button>
+        </div>
       </div>
     </aside>
   )
