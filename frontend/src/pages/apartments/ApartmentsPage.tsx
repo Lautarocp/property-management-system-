@@ -426,7 +426,7 @@ function MaintenanceHistoryModal({ apartment, onClose }: { apartment: any; onClo
                     <p className="text-sm font-semibold text-gray-800">{req.title}</p>
                     <div className="flex gap-1.5 shrink-0">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${MAINTENANCE_STATUS_COLORS[req.status]}`}>
-                        {req.status.replace('_', ' ')}
+                        {({ OPEN: t('maintenance.statusOpen'), IN_PROGRESS: t('maintenance.statusInProgress'), RESOLVED: t('maintenance.statusResolved'), CLOSED: t('maintenance.statusClosed') } as Record<string, string>)[req.status] ?? req.status}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${MAINTENANCE_PRIORITY_COLORS[req.priority]}`}>
                         {req.priority}
@@ -499,7 +499,7 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
               <div>
                 <p className="text-xs text-gray-400">{t('apartments.statusLabel2')}</p>
                 <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[apartment.status as Apartment['status']]}`}>
-                  {apartment.status}
+                  {t(`apartments.status${apartment.status.charAt(0) + apartment.status.slice(1).toLowerCase()}`)}
                 </span>
               </div>
             </div>
@@ -767,7 +767,7 @@ export function ApartmentsPage() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {s === '' ? t('apartments.filterAll') : s.charAt(0) + s.slice(1).toLowerCase()}
+              {s === '' ? t('apartments.filterAll') : t(`apartments.status${s.charAt(0) + s.slice(1).toLowerCase()}`)}
             </button>
           ))}
         </div>
@@ -824,7 +824,7 @@ export function ApartmentsPage() {
                     <td className="px-4 py-3 font-medium">${apt.monthlyRent.toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status as Apartment['status']]}`}>
-                        {apt.status}
+                        {t(`apartments.status${apt.status.charAt(0) + apt.status.slice(1).toLowerCase()}`)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
