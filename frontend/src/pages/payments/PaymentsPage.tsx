@@ -433,7 +433,7 @@ export function PaymentsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[payment.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                        {payment.status}
+                        {({ PENDING: t('payments.statusPending'), PAID: t('payments.statusPaid'), OVERDUE: t('payments.statusOverdue'), CANCELLED: t('payments.statusCancelled') } as Record<string, string>)[payment.status] ?? payment.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">

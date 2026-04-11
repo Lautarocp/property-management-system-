@@ -203,6 +203,10 @@ const en = {
     notesLabel: 'Notes',
     amountLabel: 'Amount *',
     dueDateLabel: 'Due Date *',
+    statusPending: 'Pending',
+    statusPaid: 'Paid',
+    statusOverdue: 'Overdue',
+    statusCancelled: 'Cancelled',
   },
   maintenance: {
     title: 'Maintenance',

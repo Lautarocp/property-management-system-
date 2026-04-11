@@ -203,6 +203,10 @@ const es = {
     notesLabel: 'Notas',
     amountLabel: 'Monto *',
     dueDateLabel: 'Fecha de Vencimiento *',
+    statusPending: 'Pendiente',
+    statusPaid: 'Pagado',
+    statusOverdue: 'Vencido',
+    statusCancelled: 'Cancelado',
   },
   maintenance: {
     title: 'Mantenimiento',
