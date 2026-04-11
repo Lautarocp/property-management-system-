@@ -142,7 +142,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
               {statusLabels[request.status] ?? request.status.replace('_', ' ')}
             </span>
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${PRIORITY_COLORS[request.priority as MaintenanceRequest['priority']]}`}>
-              {request.priority}
+              {({ LOW: t('maintenance.priorityLow'), MEDIUM: t('maintenance.priorityMedium'), HIGH: t('maintenance.priorityHigh'), URGENT: t('maintenance.priorityUrgent') } as Record<string, string>)[request.priority] ?? request.priority}
             </span>
           </div>
 
@@ -411,7 +411,7 @@ export function MaintenancePage() {
                       {statusLabels[req.status] ?? req.status.replace('_', ' ')}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[req.priority as MaintenanceRequest['priority']]}`}>
-                      {req.priority}
+                      {({ LOW: t('maintenance.priorityLow'), MEDIUM: t('maintenance.priorityMedium'), HIGH: t('maintenance.priorityHigh'), URGENT: t('maintenance.priorityUrgent') } as Record<string, string>)[req.priority] ?? req.priority}
                     </span>
                   </div>
                   <p className="font-medium text-gray-900">{req.title}</p>
