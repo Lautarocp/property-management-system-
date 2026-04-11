@@ -38,6 +38,23 @@ export class BillingService {
       if (result === null) {
         skipped++;
       } else {
+        // Also create a PENDING payment so the user can mark it as paid from the UI
+        const dueDate = new Date(`${month}-01`);
+        dueDate.setMonth(dueDate.getMonth() + 1); // due end of the billing month
+        await this.prisma.payment.upsert({
+          where: { id: `rent-${lease.id}-${month}` },
+          create: {
+            id: `rent-${lease.id}-${month}`,
+            leaseId: lease.id,
+            tenantId: lease.tenantId,
+            amount: Number(lease.monthlyRent),
+            dueDate,
+            type: 'RENT',
+            status: 'PENDING',
+            notes: `Monthly rent — ${month}`,
+          },
+          update: {},
+        });
         created++;
       }
     }

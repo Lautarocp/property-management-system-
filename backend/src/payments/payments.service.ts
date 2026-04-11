@@ -96,7 +96,11 @@ export class PaymentsService {
       include: PAYMENT_INCLUDE,
     });
 
-    if (amount > 0) {
+    // Only write a DEBIT for ad-hoc charge types (LATE_FEE, OTHER).
+    // RENT charges come from billing (generateMonthlyRent), DEPOSIT from leases service,
+    // MAINTENANCE from maintenance service — writing a DEBIT here would double-count them.
+    const adHocTypes: PaymentType[] = ['LATE_FEE', 'OTHER'];
+    if (amount > 0 && adHocTypes.includes(payment.type)) {
       await this.ledger.writeEntry({
         type: 'CHARGE',
         category: this.mapTypeToCategory(payment.type),
