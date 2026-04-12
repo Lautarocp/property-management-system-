@@ -250,6 +250,7 @@ const es = {
     confirmResolved: 'Confirmar Resuelto',
     percentOfTotal: '{{percent}}% del total',
     tenantChargeAmount: 'Inquilino: ${{amount}}',
+    cancelCharge: 'Cancelar Cargo',
   },
   tenants: {
     title: 'Inquilinos',

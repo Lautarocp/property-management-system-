@@ -389,7 +389,11 @@ async function main() {
     }
   }
 
-  // Maintenance charges
+  // Maintenance payment records (so charges can be marked as paid from the UI)
+  await prisma.payment.upsert({ where: { id: 'pay-maint-1' }, update: {}, create: { id: 'pay-maint-1', leaseId: 'lease-1', tenantId: 'tenant-1', amount: 90, dueDate: new Date('2026-01-20'), type: 'MAINTENANCE', status: 'PENDING', notes: 'Maintenance charge: Canilla rota en baño', maintenanceRequestId: 'maint-1' } });
+  await prisma.payment.upsert({ where: { id: 'pay-maint-6' }, update: {}, create: { id: 'pay-maint-6', leaseId: 'lease-4', tenantId: 'tenant-4', amount: 240, dueDate: new Date('2026-02-05'), type: 'MAINTENANCE', status: 'PENDING', notes: 'Maintenance charge: Vidrio roto ventana', maintenanceRequestId: 'maint-6' } });
+
+  // Maintenance charges (ledger)
   await prisma.ledgerEntry.upsert({ where: { id: 'led-maint-1' }, update: {}, create: { id: 'led-maint-1', type: 'CHARGE', category: 'MAINTENANCE', direction: 'DEBIT', amount: 90, description: 'Maintenance charge: Canilla rota en baño', referenceId: 'maint-1', referenceType: 'MaintenanceRequest', tenantId: 'tenant-1', leaseId: 'lease-1', apartmentId: 'apt-1a', createdAt: new Date('2026-01-20') } });
   await prisma.ledgerEntry.upsert({ where: { id: 'led-maint-6' }, update: {}, create: { id: 'led-maint-6', type: 'CHARGE', category: 'MAINTENANCE', direction: 'DEBIT', amount: 240, description: 'Maintenance charge: Vidrio roto ventana', referenceId: 'maint-6', referenceType: 'MaintenanceRequest', tenantId: 'tenant-4', leaseId: 'lease-4', apartmentId: 'apt-301', createdAt: new Date('2026-02-05') } });
 

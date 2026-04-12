@@ -250,6 +250,7 @@ const en = {
     confirmResolved: 'Confirm Resolved',
     percentOfTotal: '{{percent}}% of total',
     tenantChargeAmount: 'Tenant: ${{amount}}',
+    cancelCharge: 'Cancel Charge',
   },
   tenants: {
     title: 'Tenants',

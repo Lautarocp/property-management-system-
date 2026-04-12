@@ -219,6 +219,7 @@ model Payment {
   tenant      Tenant        @relation(fields: [tenantId], references: [id])
 
   maintenanceRequestId String?
+  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id])
 
   items       PaymentItem[]
 }
@@ -271,6 +272,8 @@ model MaintenanceRequest {
 
   tenantPercentage  Decimal?  @db.Decimal(5, 2)
   ownerPercentage   Decimal?  @db.Decimal(5, 2)
+
+  payments     Payment[]
 }
 
 model LedgerEntry {

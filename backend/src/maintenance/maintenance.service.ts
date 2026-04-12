@@ -8,6 +8,7 @@ import { MaintenanceStatus } from '@prisma/client';
 const include = {
   apartment: { include: { complex: true } },
   tenant: true,
+  payments: { select: { id: true, status: true, amount: true } },
 };
 
 @Injectable()

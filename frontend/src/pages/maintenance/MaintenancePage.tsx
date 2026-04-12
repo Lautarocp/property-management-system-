@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useMaintenance, useCreateMaintenance, useUpdateMaintenance, useDeleteMaintenance } from '@/hooks/useMaintenance'
+import { useMarkAsPaid } from '@/hooks/usePayments'
 import { useApartments } from '@/hooks/useApartments'
 import { useFiltersStore } from '@/store/filters.store'
 import type { MaintenanceRequest } from '@/types'
@@ -93,6 +94,7 @@ function MaintenanceForm({
 function DetailPanel({ request, onClose }: { request: any; onClose: () => void }) {
   const { t } = useTranslation()
   const updateMaintenance = useUpdateMaintenance()
+  const markAsPaid = useMarkAsPaid()
 
   const [resolvingForm, setResolvingForm] = useState(false)
   const [repairCost, setRepairCost] = useState('')
@@ -102,6 +104,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
   const [chargeValue, setChargeValue] = useState('')
 
   const isResolved = request.status === 'RESOLVED' || request.status === 'CLOSED'
+  const linkedPayment = request.payments?.find((p: any) => p.status !== 'CANCELLED')
 
   const handleResolve = () => {
     const cost = Number(repairCost) || undefined
@@ -164,47 +167,84 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
           )}
 
           {isResolved && (
-            <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-3">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.repairCost')}</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {request.repairCost != null ? `$${Number(request.repairCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
-                </p>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('maintenance.tenantCharge')}</p>
-                  {!editingCharge && (
-                    <button onClick={() => { setEditingCharge(true); setChargeValue(String(Number(request.tenantChargeAmount ?? 0))) }} className="text-xs text-indigo-600 hover:underline">{t('common.edit')}</button>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-3">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('maintenance.repairCost')}</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {request.repairCost != null ? `$${Number(request.repairCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('maintenance.tenantCharge')}</p>
+                    {!editingCharge && (
+                      <button onClick={() => { setEditingCharge(true); setChargeValue(String(Number(request.tenantChargeAmount ?? 0))) }} className="text-xs text-indigo-600 hover:underline">{t('common.edit')}</button>
+                    )}
+                  </div>
+                  {editingCharge ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="number" step="0.01" min="0"
+                        value={chargeValue}
+                        onChange={e => setChargeValue(e.target.value)}
+                        className="flex-1 border rounded-lg px-2 py-1 text-sm"
+                        autoFocus
+                      />
+                      <button onClick={saveCharge} disabled={updateMaintenance.isPending} className="px-3 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                        {updateMaintenance.isPending ? '...' : t('common.save')}
+                      </button>
+                      <button onClick={() => setEditingCharge(false)} className="px-2 py-1 text-xs text-gray-500 border rounded-lg hover:bg-gray-50">✕</button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-lg font-bold text-indigo-600">
+                        {request.tenantChargeAmount != null ? `$${Number(request.tenantChargeAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
+                      </p>
+                      {Number(request.repairCost) > 0 && Number(request.tenantChargeAmount) > 0 && (
+                        <p className="text-xs text-gray-400">
+                          {t('maintenance.percentOfTotal', { percent: ((Number(request.tenantChargeAmount) / Number(request.repairCost)) * 100).toFixed(0) })}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
-                {editingCharge ? (
-                  <div className="flex items-center gap-2 mt-1">
-                    <input
-                      type="number" step="0.01" min="0"
-                      value={chargeValue}
-                      onChange={e => setChargeValue(e.target.value)}
-                      className="flex-1 border rounded-lg px-2 py-1 text-sm"
-                      autoFocus
-                    />
-                    <button onClick={saveCharge} disabled={updateMaintenance.isPending} className="px-3 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                      {updateMaintenance.isPending ? '...' : t('common.save')}
-                    </button>
-                    <button onClick={() => setEditingCharge(false)} className="px-2 py-1 text-xs text-gray-500 border rounded-lg hover:bg-gray-50">✕</button>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-lg font-bold text-indigo-600">
-                      {request.tenantChargeAmount != null ? `$${Number(request.tenantChargeAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
-                    </p>
-                    {Number(request.repairCost) > 0 && Number(request.tenantChargeAmount) > 0 && (
-                      <p className="text-xs text-gray-400">
-                        {t('maintenance.percentOfTotal', { percent: ((Number(request.tenantChargeAmount) / Number(request.repairCost)) * 100).toFixed(0) })}
-                      </p>
-                    )}
-                  </>
-                )}
               </div>
+
+              {linkedPayment && (
+                <div className="flex items-center justify-between bg-white border rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      linkedPayment.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                      linkedPayment.status === 'OVERDUE' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {({ PENDING: t('payments.statusPending'), PAID: t('payments.statusPaid'), OVERDUE: t('payments.statusOverdue') } as Record<string, string>)[linkedPayment.status] ?? linkedPayment.status}
+                    </span>
+                    <span className="text-sm text-gray-600">${Number(linkedPayment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {linkedPayment.status !== 'PAID' && (
+                      <button
+                        onClick={() => markAsPaid.mutate(linkedPayment.id)}
+                        disabled={markAsPaid.isPending}
+                        className="text-xs px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {markAsPaid.isPending ? '...' : t('payments.markPaid')}
+                      </button>
+                    )}
+                    {linkedPayment.status !== 'PAID' && (
+                      <button
+                        onClick={() => updateMaintenance.mutate({ id: request.id, data: { tenantChargeAmount: 0 } })}
+                        disabled={updateMaintenance.isPending}
+                        className="text-xs px-2 py-1 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                      >
+                        {t('maintenance.cancelCharge')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
