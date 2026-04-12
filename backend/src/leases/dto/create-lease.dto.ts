@@ -34,6 +34,13 @@ export class CreateLeaseDto {
   depositAmount!: number;
 
   @ApiPropertyOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  buildingFeeAmount?: number;
+
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   notes?: string;

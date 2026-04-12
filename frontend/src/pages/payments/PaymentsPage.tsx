@@ -19,6 +19,7 @@ const TYPE_COLORS: Record<string, string> = {
   DEPOSIT: 'bg-purple-100 text-purple-700',
   LATE_FEE: 'bg-orange-100 text-orange-700',
   MAINTENANCE: 'bg-red-100 text-red-700',
+  BUILDING_FEE: 'bg-teal-100 text-teal-700',
   OTHER: 'bg-gray-100 text-gray-600',
 }
 
@@ -93,6 +94,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
     RENT: t('payments.typeRent'),
     DEPOSIT: t('payments.typeDeposit'),
     LATE_FEE: t('payments.typeLateFee'),
+    BUILDING_FEE: t('payments.typeBuildingFee'),
     OTHER: t('payments.typeOther'),
   }
 
@@ -312,6 +314,7 @@ export function PaymentsPage() {
     DEPOSIT: t('payments.typeDeposit'),
     LATE_FEE: t('payments.typeLateFee'),
     MAINTENANCE: t('payments.typeMaintenance'),
+    BUILDING_FEE: t('payments.typeBuildingFee'),
     OTHER: t('payments.typeOther'),
   }
 

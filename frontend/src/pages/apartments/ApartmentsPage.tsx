@@ -128,6 +128,10 @@ function AssignTenantModal({ apartment, onClose }: { apartment: any; onClose: ()
             </div>
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.buildingFeeLabel')} <span className="text-gray-400 font-normal">({t('common.optional')})</span></label>
+            <input type="number" min={0} step="0.01" placeholder="0.00" {...register('buildingFeeAmount', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.notes')}</label>
             <textarea {...register('notes')} rows={2} className="w-full border rounded-lg px-3 py-2 text-sm" />
           </div>
@@ -211,6 +215,10 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.depositLabel')}</label>
                 <input type="number" min={0} step="0.01" {...register('depositAmount', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.buildingFeeLabel')} <span className="text-gray-400 font-normal">({t('common.optional')})</span></label>
+              <input type="number" min={0} step="0.01" placeholder="0.00" {...register('buildingFeeAmount', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
             {transferLease.error && (
               <p className="text-sm text-red-600">{(transferLease.error as any)?.response?.data?.message || t('apartments.errorMoving')}</p>
@@ -576,6 +584,12 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
                     <p className="text-gray-800">{new Date(activeLease.endDate).toLocaleDateString()}</p>
                   </div>
                 </div>
+                {activeLease.buildingFeeAmount && Number(activeLease.buildingFeeAmount) > 0 && (
+                  <div className="pt-2 border-t border-blue-200 text-sm">
+                    <p className="text-xs text-gray-400">{t('apartments.buildingFeeLabel')}</p>
+                    <p className="font-semibold text-teal-700">${Number(activeLease.buildingFeeAmount).toLocaleString()}</p>
+                  </div>
+                )}
               </div>
             </section>
           ) : (

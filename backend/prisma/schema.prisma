@@ -41,6 +41,7 @@ enum PaymentType {
   DEPOSIT
   LATE_FEE
   MAINTENANCE
+  BUILDING_FEE
   OTHER
 }
 
@@ -79,6 +80,7 @@ enum LedgerEntryCategory {
   EXTRA
   DEPOSIT
   ADJUSTMENT
+  BUILDING_FEE
 }
 
 enum LedgerEntryDirection {
@@ -173,9 +175,10 @@ model Lease {
   id            String      @id @default(cuid())
   startDate     DateTime
   endDate       DateTime
-  monthlyRent   Decimal     @db.Decimal(10, 2)
-  depositAmount Decimal     @db.Decimal(10, 2)
-  status        LeaseStatus @default(PENDING)
+  monthlyRent      Decimal     @db.Decimal(10, 2)
+  depositAmount    Decimal     @db.Decimal(10, 2)
+  buildingFeeAmount Decimal?   @db.Decimal(10, 2)
+  status           LeaseStatus @default(PENDING)
   notes         String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
