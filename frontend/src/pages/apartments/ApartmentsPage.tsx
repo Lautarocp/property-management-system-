@@ -685,7 +685,6 @@ export function ApartmentsPage() {
   const createApartment = useCreateApartment()
   const updateApartment = useUpdateApartment()
   const deleteApartment = useDeleteApartment()
-  const terminateLease = useTerminateLease()
 
   const location = useLocation()
   const [showCreate, setShowCreate] = useState(false)
