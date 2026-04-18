@@ -3,7 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { LedgerService } from '@/ledger/ledger.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { PaymentType, LedgerEntryCategory } from '@prisma/client';
+import { PaymentType, LedgerEntryCategory, Prisma } from '@prisma/client';
 
 const PAYMENT_INCLUDE = {
   items: { orderBy: { createdAt: 'asc' as const } },
@@ -21,6 +21,9 @@ const PAYMENT_INCLUDE = {
     },
   },
 };
+
+type PaymentWithRelations = Prisma.PaymentGetPayload<{ include: typeof PAYMENT_INCLUDE }>;
+type PaymentItemRow = PaymentWithRelations['items'][number] & { ledgerCategory?: string | null };
 
 @Injectable()
 export class PaymentsService {
@@ -91,7 +94,7 @@ export class PaymentsService {
         notes: dto.notes,
         status: 'PENDING',
         ...(dto.items?.length && {
-          items: { create: dto.items.map(i => ({ name: i.name, amount: i.amount })) },
+          items: { create: dto.items.map((i) => ({ name: i.name, amount: i.amount })) },
         }),
       },
       include: PAYMENT_INCLUDE,
@@ -119,8 +122,52 @@ export class PaymentsService {
     return payment;
   }
 
-  async markAsPaid(id: string) {
+  async markAsPaid(id: string, paidItemIds?: string[]) {
     const payment = await this.findOne(id);
+    const items = payment.items as PaymentItemRow[];
+
+    const hasItems = items.length > 0;
+    const isPartial = hasItems && paidItemIds && paidItemIds.length > 0 && paidItemIds.length < items.length;
+
+    if (isPartial) {
+      const selectedItems = items.filter((i) => paidItemIds!.includes(i.id));
+      const unpaidIds = items.filter((i) => !paidItemIds!.includes(i.id)).map((i) => i.id);
+
+      // Remove unpaid items from this payment — their DEBIT stays in the ledger as outstanding
+      await this.prisma.paymentItem.deleteMany({ where: { id: { in: unpaidIds } } });
+
+      const paidAmount = selectedItems.reduce((sum, i) => sum + Number(i.amount), 0);
+      await this.prisma.payment.update({ where: { id }, data: { amount: paidAmount } });
+
+      // Create per-category CREDIT entries so each debt is properly settled in the ledger
+      const creditsByCategory = new Map<string, number>();
+      for (const item of selectedItems) {
+        const cat: string = item.ledgerCategory ?? this.mapTypeToCategory(payment.type);
+        creditsByCategory.set(cat, (creditsByCategory.get(cat) ?? 0) + Number(item.amount));
+      }
+
+      for (const [category, amount] of creditsByCategory) {
+        await this.ledger.writeEntry({
+          type: 'PAYMENT',
+          category: category as LedgerEntryCategory,
+          direction: 'CREDIT',
+          amount,
+          description: 'Payment received',
+          referenceId: id,
+          referenceType: 'Payment',
+          tenantId: payment.tenantId,
+          leaseId: payment.leaseId,
+          apartmentId: payment.lease.apartment.id,
+        });
+      }
+
+      return this.prisma.payment.update({
+        where: { id },
+        data: { status: 'PAID', paidDate: new Date() },
+      });
+    }
+
+    // Full payment — existing behavior
     const updated = await this.prisma.payment.update({
       where: { id },
       data: { status: 'PAID', paidDate: new Date() },

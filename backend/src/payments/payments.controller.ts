@@ -32,8 +32,8 @@ export class PaymentsController {
   }
 
   @Patch(':id/pay')
-  markAsPaid(@Param('id') id: string) {
-    return this.service.markAsPaid(id);
+  markAsPaid(@Param('id') id: string, @Body() body: { paidItemIds?: string[] }) {
+    return this.service.markAsPaid(id, body?.paidItemIds);
   }
 
   @Patch(':id/unpay')

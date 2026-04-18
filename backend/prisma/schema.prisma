@@ -228,10 +228,11 @@ model Payment {
 }
 
 model PaymentItem {
-  id        String   @id @default(cuid())
-  name      String
-  amount    Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  name           String
+  amount         Decimal  @db.Decimal(10, 2)
+  ledgerCategory String?
+  createdAt      DateTime @default(now())
 
   paymentId String
   payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)

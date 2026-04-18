@@ -11,7 +11,7 @@ export class BillingController {
   constructor(private readonly service: BillingService) {}
 
   @Post('generate-monthly-rent')
-  generateMonthlyRent(@Body() body: { month?: string }) {
-    return this.service.generateMonthlyRent(body.month);
+  generateMonthlyRent(@Body() body: { month?: string; includeOutstanding?: boolean }) {
+    return this.service.generateMonthlyRent(body.month, body.includeOutstanding);
   }
 }
