@@ -10,6 +10,8 @@ export interface CreateExpensePayload {
   receipt?: string
   notes?: string
   maintenanceRequestId?: string
+  distributeToTenants?: boolean
+  assignToTenantId?: string
 }
 
 export const expensesApi = {

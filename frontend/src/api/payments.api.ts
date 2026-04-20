@@ -20,7 +20,8 @@ export const paymentsApi = {
     apiClient.get<Payment[]>('/payments', { params }).then(r => r.data),
   getOne: (id: string) => apiClient.get<Payment>(`/payments/${id}`).then(r => r.data),
   create: (data: CreatePaymentPayload) => apiClient.post<Payment>('/payments', data).then(r => r.data),
-  markAsPaid: (id: string) => apiClient.patch<Payment>(`/payments/${id}/pay`).then(r => r.data),
+  markAsPaid: (id: string, paidItemIds?: string[]) =>
+    apiClient.patch<Payment>(`/payments/${id}/pay`, paidItemIds?.length ? { paidItemIds } : {}).then(r => r.data),
   markAsUnpaid: (id: string) => apiClient.patch<Payment>(`/payments/${id}/unpay`).then(r => r.data),
   update: (id: string, data: Partial<CreatePaymentPayload>) =>
     apiClient.patch<Payment>(`/payments/${id}`, data).then(r => r.data),

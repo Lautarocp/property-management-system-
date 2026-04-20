@@ -79,7 +79,7 @@ function RevenueByMonthSection({ complexes }: { complexes: any[] }) {
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
             <Tooltip
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, t('reports.revenue')]}
               labelStyle={{ fontWeight: 600 }}
             />
             <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
@@ -122,7 +122,7 @@ function RevenueByComplexSection() {
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Revenue']} />
+              <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, t('reports.revenue')]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="w-full lg:w-64 space-y-2">
@@ -306,7 +306,7 @@ function ExpensesByCategorySection({ complexes }: { complexes: any[] }) {
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Total']} />
+              <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, t('common.total')]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="w-full lg:w-64 space-y-2">

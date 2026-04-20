@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { leasesApi } from '@/api/leases.api'
 import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense } from '@/hooks/useExpenses'
 import { useFiltersStore } from '@/store/filters.store'
 import { complexesApi } from '@/api/complexes.api'
@@ -20,23 +21,52 @@ const CATEGORY_COLORS: Record<Expense['category'], string> = {
 
 const CATEGORIES = ['REPAIRS', 'UTILITIES', 'CLEANING', 'INSURANCE', 'TAXES', 'STAFF', 'OTHER'] as Expense['category'][]
 
+type DistributeMode = 'none' | 'all' | 'one'
+
 function ExpenseForm({
   defaultValues,
   complexes,
   onSubmit,
   onCancel,
   isLoading,
+  showDistribute = false,
 }: {
   defaultValues?: Partial<CreateExpensePayload>
   complexes: any[]
   onSubmit: (data: CreateExpensePayload) => void
   onCancel: () => void
   isLoading: boolean
+  showDistribute?: boolean
 }) {
   const { t } = useTranslation()
+  const [distributeMode, setDistributeMode] = useState<DistributeMode>('none')
+  const [selectedTenantId, setSelectedTenantId] = useState('')
+
   const { register, handleSubmit, formState: { errors } } = useForm<CreateExpensePayload>({
     defaultValues,
   })
+
+  const { data: allLeases = [] } = useQuery({
+    queryKey: ['leases'],
+    queryFn: () => leasesApi.getAll(),
+    enabled: showDistribute,
+  })
+
+  const activeTenants = (allLeases as any[])
+    .filter(l => l.status === 'ACTIVE')
+    .map(l => ({
+      tenantId: l.tenantId,
+      name: `${l.tenant?.firstName ?? ''} ${l.tenant?.lastName ?? ''}`.trim(),
+      unit: l.apartment?.number ?? '',
+      complex: l.apartment?.complex?.name ?? '',
+    }))
+
+  const handleFormSubmit = (data: CreateExpensePayload) => {
+    const payload: CreateExpensePayload = { ...data }
+    if (distributeMode === 'all') payload.distributeToTenants = true
+    else if (distributeMode === 'one' && selectedTenantId) payload.assignToTenantId = selectedTenantId
+    onSubmit(payload)
+  }
 
   const categoryLabels: Record<string, string> = {
     REPAIRS: t('expenses.catRepairs'),
@@ -49,7 +79,7 @@ function ExpenseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenses.descriptionLabel')}</label>
@@ -119,6 +149,51 @@ function ExpenseForm({
             placeholder={t('expenses.notesPlaceholder')}
           />
         </div>
+
+        {showDistribute && (
+          <div className="col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+            <p className="text-sm font-semibold text-blue-900">{t('expenses.ledgerDistribution')}</p>
+
+            {(['none', 'all', 'one'] as DistributeMode[]).map(mode => (
+              <label key={mode} className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  className="mt-0.5 h-4 w-4 text-blue-600"
+                  checked={distributeMode === mode}
+                  onChange={() => { setDistributeMode(mode); setSelectedTenantId('') }}
+                />
+                <div>
+                  <span className="text-sm font-medium text-blue-900">
+                    {t(`expenses.distribute${mode === 'none' ? 'None' : mode === 'all' ? 'All' : 'One'}`)}
+                  </span>
+                  {mode !== 'none' && (
+                    <p className="text-xs text-blue-600">
+                      {t(`expenses.distribute${mode === 'all' ? 'All' : 'One'}Hint`)}
+                    </p>
+                  )}
+                </div>
+              </label>
+            ))}
+
+            {distributeMode === 'one' && (
+              <select
+                value={selectedTenantId}
+                onChange={e => setSelectedTenantId(e.target.value)}
+                className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm bg-white mt-1"
+              >
+                <option value="">{t('expenses.selectTenant')}</option>
+                {activeTenants.length === 0
+                  ? <option disabled>{t('expenses.noActiveLeases')}</option>
+                  : activeTenants.map(at => (
+                    <option key={at.tenantId} value={at.tenantId}>
+                      {at.name} — Apt {at.unit} {at.complex ? `(${at.complex})` : ''}
+                    </option>
+                  ))
+                }
+              </select>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 justify-end pt-2">
@@ -169,6 +244,7 @@ function EditExpenseModal({ expense, complexes, onClose }: { expense: any; compl
           onSubmit={onSubmit}
           onCancel={onClose}
           isLoading={updateExpense.isPending}
+          showDistribute
         />
       </div>
     </div>
@@ -276,6 +352,7 @@ export function ExpensesPage() {
             onSubmit={handleCreate}
             onCancel={() => setShowCreate(false)}
             isLoading={createExpense.isPending}
+            showDistribute
           />
         </div>
       )}

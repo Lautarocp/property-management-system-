@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ExpenseCategory } from '@prisma/client';
@@ -42,4 +42,14 @@ export class CreateExpenseDto {
   @IsString()
   @IsOptional()
   maintenanceRequestId?: string;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  distributeToTenants?: boolean;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  assignToTenantId?: string;
 }

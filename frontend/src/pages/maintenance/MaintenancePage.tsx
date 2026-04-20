@@ -226,7 +226,7 @@ function DetailPanel({ request, onClose }: { request: any; onClose: () => void }
                   <div className="flex gap-2">
                     {linkedPayment.status !== 'PAID' && (
                       <button
-                        onClick={() => markAsPaid.mutate(linkedPayment.id)}
+                        onClick={() => markAsPaid.mutate({ id: linkedPayment.id })}
                         disabled={markAsPaid.isPending}
                         className="text-xs px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                       >

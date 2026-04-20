@@ -300,6 +300,7 @@ export function PaymentsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [selectedItemIds, setSelectedItemIds] = useState<Record<string, string[]>>({})
 
   const { data: payments, isLoading } = usePayments(
     activeFilter === 'ALL' ? undefined : { status: activeFilter }
@@ -420,7 +421,16 @@ export function PaymentsPage() {
                         <span className="font-semibold text-gray-900">${Number(payment.amount).toLocaleString()}</span>
                         {payment.items?.length > 0 && (
                           <button
-                            onClick={() => setExpanded(expanded === payment.id ? null : payment.id)}
+                            onClick={() => {
+                              const isOpening = expanded !== payment.id
+                              setExpanded(isOpening ? payment.id : null)
+                              if (isOpening && !selectedItemIds[payment.id]) {
+                                setSelectedItemIds(prev => ({
+                                  ...prev,
+                                  [payment.id]: payment.items.map((i: any) => i.id),
+                                }))
+                              }
+                            }}
                             className="text-xs text-blue-500 hover:underline mt-0.5"
                           >
                             {expanded === payment.id ? t('payments.hide') : t('payments.items', { count: payment.items.length })}
@@ -442,13 +452,31 @@ export function PaymentsPage() {
                     <td className="px-4 py-3">
                       <div className="flex gap-3">
                         {(payment.status === 'PENDING' || payment.status === 'OVERDUE') && (
-                          <button
-                            onClick={() => markAsPaid.mutate(payment.id)}
-                            disabled={markAsPaid.isPending}
-                            className="text-xs text-green-600 hover:underline disabled:opacity-50"
-                          >
-                            {t('payments.markPaid')}
-                          </button>
+                          payment.items?.length > 0 ? (
+                            <button
+                              onClick={() => {
+                                const isOpening = expanded !== payment.id
+                                setExpanded(isOpening ? payment.id : null)
+                                if (isOpening && !selectedItemIds[payment.id]) {
+                                  setSelectedItemIds(prev => ({
+                                    ...prev,
+                                    [payment.id]: payment.items.map((i: any) => i.id),
+                                  }))
+                                }
+                              }}
+                              className="text-xs text-green-600 hover:underline"
+                            >
+                              {expanded === payment.id ? t('payments.hide') : t('payments.viewItems')}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => markAsPaid.mutate({ id: payment.id })}
+                              disabled={markAsPaid.isPending}
+                              className="text-xs text-green-600 hover:underline disabled:opacity-50"
+                            >
+                              {t('payments.markPaid')}
+                            </button>
+                          )
                         )}
                         {payment.status === 'PAID' && (
                           <button
@@ -459,6 +487,7 @@ export function PaymentsPage() {
                             {t('payments.markUnpaid')}
                           </button>
                         )}
+
                         <button onClick={() => setEditing(payment)} className="text-xs text-blue-600 hover:underline">
                           {t('common.edit')}
                         </button>
@@ -472,26 +501,85 @@ export function PaymentsPage() {
                       </div>
                     </td>
                   </tr>
-                  {expanded === payment.id && payment.items?.length > 0 && (
-                    <tr key={`${payment.id}-items`} className={payment.status === 'OVERDUE' ? 'bg-red-50' : 'bg-gray-50'}>
-                      <td colSpan={8} className="px-8 py-3">
-                        <div className="space-y-1 max-w-xs">
-                          {payment.items.map((item: any) => (
-                            <div key={item.id} className="flex justify-between text-xs text-gray-600">
-                              <span>{item.name}</span>
-                              <span className={Number(item.amount) < 0 ? 'text-red-500' : 'text-gray-800'}>
-                                {Number(item.amount) < 0 ? '-' : '+'}${Math.abs(Number(item.amount)).toLocaleString()}
+                  {expanded === payment.id && payment.items?.length > 0 && (() => {
+                    const isPayable = payment.status === 'PENDING' || payment.status === 'OVERDUE'
+                    const selected = selectedItemIds[payment.id] ?? payment.items.map((i: any) => i.id)
+                    const selectedTotal = payment.items
+                      .filter((i: any) => selected.includes(i.id))
+                      .reduce((sum: number, i: any) => sum + Number(i.amount), 0)
+
+                    const toggleItem = (itemId: string) => {
+                      setSelectedItemIds(prev => {
+                        const cur = prev[payment.id] ?? payment.items.map((i: any) => i.id)
+                        return {
+                          ...prev,
+                          [payment.id]: cur.includes(itemId)
+                            ? cur.filter((id: string) => id !== itemId)
+                            : [...cur, itemId],
+                        }
+                      })
+                    }
+
+                    return (
+                      <tr key={`${payment.id}-items`} className={payment.status === 'OVERDUE' ? 'bg-red-50' : 'bg-blue-50/40'}>
+                        <td colSpan={8} className="px-8 py-3">
+                          <div className="max-w-sm space-y-1">
+                            {payment.items.map((item: any) => (
+                              <div key={item.id} className="flex items-center justify-between gap-3 text-xs text-gray-700">
+                                {isPayable ? (
+                                  <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={selected.includes(item.id)}
+                                      onChange={() => toggleItem(item.id)}
+                                      className="accent-blue-600 w-3.5 h-3.5"
+                                    />
+                                    <span className={!selected.includes(item.id) ? 'text-gray-400 line-through' : ''}>
+                                      {item.name}
+                                    </span>
+                                  </label>
+                                ) : (
+                                  <span className="flex-1">{item.name}</span>
+                                )}
+                                <span className={`font-medium ${!isPayable || selected.includes(item.id) ? 'text-gray-800' : 'text-gray-400'}`}>
+                                  ${Number(item.amount).toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+
+                            <div className="flex items-center justify-between border-t pt-2 mt-2">
+                              <span className="text-xs font-semibold text-gray-700">
+                                {isPayable ? t('payments.selectedTotal') : t('payments.totalLabel')}
+                              </span>
+                              <span className="text-sm font-bold text-gray-900">
+                                ${(isPayable ? selectedTotal : Number(payment.amount)).toLocaleString()}
                               </span>
                             </div>
-                          ))}
-                          <div className="flex justify-between text-xs font-semibold border-t pt-1 mt-1 text-gray-800">
-                            <span>{t('payments.totalLabel')}</span>
-                            <span>${Number(payment.amount).toLocaleString()}</span>
+
+                            {isPayable && (
+                              <div className="flex items-center gap-3 pt-1">
+                                <button
+                                  onClick={() => markAsPaid.mutate({
+                                    id: payment.id,
+                                    paidItemIds: selected.length < payment.items.length ? selected : undefined,
+                                  })}
+                                  disabled={markAsPaid.isPending || selected.length === 0}
+                                  className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-40 font-medium"
+                                >
+                                  {t('payments.chargeSelected', { amount: selectedTotal.toLocaleString() })}
+                                </button>
+                                {selected.length < payment.items.length && (
+                                  <span className="text-xs text-amber-600 italic">
+                                    {t('payments.pendingItemsNote')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+                        </td>
+                      </tr>
+                    )
+                  })()}
                 </>
               ))}
             </tbody>

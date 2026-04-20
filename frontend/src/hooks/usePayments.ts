@@ -22,7 +22,8 @@ export function useCreatePayment() {
 export function useMarkAsPaid() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => paymentsApi.markAsPaid(id),
+    mutationFn: ({ id, paidItemIds }: { id: string; paidItemIds?: string[] }) =>
+      paymentsApi.markAsPaid(id, paidItemIds),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payments'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })

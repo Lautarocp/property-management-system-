@@ -330,7 +330,7 @@ function TenantDetailPanel({ tenantId, onClose, onEdit }: {
                         </span>
                         {(p.status === 'PENDING' || p.status === 'OVERDUE') && (
                           <button
-                            onClick={() => markAsPaid.mutate(p.id)}
+                            onClick={() => markAsPaid.mutate({ id: p.id })}
                             className="text-xs text-green-600 hover:underline"
                           >
                             {t('tenants.markPaid')}
