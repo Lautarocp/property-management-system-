@@ -37,7 +37,6 @@ export class PaymentsService {
       RENT: 'RENT',
       DEPOSIT: 'DEPOSIT',
       MAINTENANCE: 'MAINTENANCE',
-      BUILDING_FEE: 'BUILDING_FEE',
       LATE_FEE: 'EXTRA',
       OTHER: 'EXTRA',
     };

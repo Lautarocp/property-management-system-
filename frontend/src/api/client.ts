@@ -1,7 +1,9 @@
 import axios from 'axios'
 
 const apiClient = axios.create({
-  baseURL: `http://${window.location.hostname}:3000/api`,
+  baseURL: window.location.hostname.includes('.ts.net')
+    ? `https://${window.location.hostname}:8443/api`
+    : `http://${window.location.hostname}:3000/api`,
   headers: {
     'Content-Type': 'application/json',
   },

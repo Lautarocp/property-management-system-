@@ -180,40 +180,6 @@ export class BillingService {
         created++;
       }
 
-      // ── Building fee charge (optional) ────────────────────────────────────
-      if (lease.buildingFeeAmount && Number(lease.buildingFeeAmount) > 0) {
-        const feeResult = await this.ledger.writeEntry({
-          type: 'CHARGE',
-          category: 'BUILDING_FEE',
-          direction: 'DEBIT',
-          amount: Number(lease.buildingFeeAmount),
-          description: `Building fee — ${month}`,
-          referenceId: lease.id,
-          referenceType: 'Lease',
-          billingMonth: month,
-          tenantId: lease.tenantId,
-          leaseId: lease.id,
-          apartmentId: lease.apartment.id,
-        });
-
-        if (feeResult !== null) {
-          await this.prisma.payment.upsert({
-            where: { id: `fee-${lease.id}-${month}` },
-            create: {
-              id: `fee-${lease.id}-${month}`,
-              leaseId: lease.id,
-              tenantId: lease.tenantId,
-              amount: Number(lease.buildingFeeAmount),
-              dueDate,
-              type: 'BUILDING_FEE',
-              status: 'PENDING',
-              notes: `Building fee — ${month}`,
-            },
-            update: {},
-          });
-        }
-      }
-
       // ── Expensas e impuestos (prorrateados por inquilinos del complejo) ────
       const complexId = lease.apartment.complexId;
       const complexLeaseCount = leasesPerComplex.get(complexId) ?? 1;

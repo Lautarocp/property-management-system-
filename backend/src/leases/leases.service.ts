@@ -68,7 +68,6 @@ export class LeasesService {
           endDate: new Date(dto.endDate),
           monthlyRent: dto.monthlyRent,
           depositAmount: dto.depositAmount,
-          buildingFeeAmount: dto.buildingFeeAmount ?? null,
           notes: dto.notes,
           status: 'ACTIVE',
         },
@@ -182,7 +181,6 @@ export class LeasesService {
           endDate: new Date(dto.endDate),
           monthlyRent: dto.monthlyRent,
           depositAmount: dto.depositAmount,
-          buildingFeeAmount: dto.buildingFeeAmount ?? null,
           status: 'ACTIVE',
         },
         include: {
