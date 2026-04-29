@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments'
+import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment, useDownloadPaymentPdf } from '@/hooks/usePayments'
 import { useFiltersStore } from '@/store/filters.store'
 import { leasesApi } from '@/api/leases.api'
 import type { CreatePaymentPayload } from '@/api/payments.api'
@@ -309,6 +309,7 @@ export function PaymentsPage() {
   const markAsPaid = useMarkAsPaid()
   const markAsUnpaid = useMarkAsUnpaid()
   const deletePayment = useDeletePayment()
+  const downloadPdf = useDownloadPaymentPdf()
 
   const typeLabels: Record<string, string> = {
     RENT: t('payments.typeRent'),
@@ -490,6 +491,13 @@ export function PaymentsPage() {
 
                         <button onClick={() => setEditing(payment)} className="text-xs text-blue-600 hover:underline">
                           {t('common.edit')}
+                        </button>
+                        <button
+                          onClick={() => downloadPdf.mutate({ id: payment.id, tenantName: `${payment.tenant.firstName} ${payment.tenant.lastName}` })}
+                          disabled={downloadPdf.isPending}
+                          className="text-xs text-purple-600 hover:underline disabled:opacity-50"
+                        >
+                          {t('payments.downloadPdf')}
                         </button>
                         <button
                           onClick={() => handleDelete(payment.id)}

@@ -213,6 +213,7 @@ const es = {
     statusPaid: 'Pagado',
     statusOverdue: 'Vencido',
     statusCancelled: 'Cancelado',
+    downloadPdf: 'PDF',
   },
   maintenance: {
     title: 'Mantenimiento',

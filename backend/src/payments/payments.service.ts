@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+// @ts-ignore – pdfkit is installed in the Docker container
+import PDFDocument from 'pdfkit';
 import { PrismaService } from '@/prisma/prisma.service';
 import { LedgerService } from '@/ledger/ledger.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -231,5 +233,110 @@ export class PaymentsService {
   async remove(id: string) {
     await this.findOne(id);
     await this.prisma.payment.delete({ where: { id } });
+  }
+
+  async generatePdf(id: string): Promise<any> {
+    const payment = await this.findOne(id);
+    const tenant = payment.tenant;
+    const apartment = payment.lease.apartment;
+    const complex = (apartment as any).complex;
+
+    const typeLabels: Record<string, string> = {
+      RENT: 'Alquiler', DEPOSIT: 'Depósito', LATE_FEE: 'Cargo por Mora',
+      MAINTENANCE: 'Mantenimiento', OTHER: 'Otro',
+    };
+    const statusLabels: Record<string, string> = {
+      PENDING: 'PENDIENTE', PAID: 'PAGADO', OVERDUE: 'VENCIDO', CANCELLED: 'CANCELADO',
+    };
+
+    const items: { name: string; amount: number }[] = payment.items?.length
+      ? payment.items.map((i: any) => ({ name: i.name, amount: Number(i.amount) }))
+      : [{ name: typeLabels[payment.type] ?? payment.type, amount: Number(payment.amount) }];
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const chunks: any[] = [];
+      doc.on('data', (chunk: any) => chunks.push(chunk));
+      // @ts-ignore – Buffer is available in Node/Docker container
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Header
+      doc.fontSize(20).font('Helvetica-Bold').text('COMPROBANTE DE PAGO', { align: 'center' });
+      doc.fontSize(12).font('Helvetica').text(complex?.name ?? '', { align: 'center' });
+      doc.moveDown(0.5);
+      doc.fontSize(8).fillColor('#888').text(`Ref: ${id}`, { align: 'right' });
+      doc.fillColor('#000');
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(0.8);
+
+      // Tenant & apartment info
+      doc.fontSize(10).font('Helvetica-Bold').text('INQUILINO');
+      doc.font('Helvetica').text(`Nombre: ${tenant.firstName} ${tenant.lastName}`);
+      if (tenant.email) doc.text(`Email: ${tenant.email}`);
+      doc.moveDown(0.5);
+
+      doc.font('Helvetica-Bold').text('UNIDAD');
+      doc.font('Helvetica').text(`Apartamento: #${apartment.number}${(apartment as any).floor ? ` (Piso ${(apartment as any).floor})` : ''}`);
+      doc.text(`Edificio: ${complex?.name ?? '-'}`);
+      doc.moveDown(0.5);
+
+      const dueDate = new Date(payment.dueDate);
+      doc.font('Helvetica-Bold').text('PERÍODO');
+      doc.font('Helvetica').text(`Mes: ${dueDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}`);
+      doc.text(`Vencimiento: ${dueDate.toLocaleDateString('es-AR')}`);
+      if (payment.paidDate) doc.text(`Fecha de pago: ${new Date(payment.paidDate).toLocaleDateString('es-AR')}`);
+      doc.moveDown(0.8);
+
+      // Items table header
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica-Bold');
+      const headerY = doc.y;
+      doc.text('DESCRIPCIÓN', 50, headerY);
+      doc.text('MONTO', 50, headerY, { width: 495, align: 'right' });
+      doc.moveDown(0.8);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#ccc').stroke();
+      doc.strokeColor('#000');
+      doc.moveDown(0.5);
+
+      // Items
+      doc.font('Helvetica').fontSize(10);
+      for (const item of items) {
+        const rowY = doc.y;
+        const amt = `$${item.amount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        doc.text(item.name, 50, rowY, { width: 350 });
+        doc.text(amt, 50, rowY, { width: 495, align: 'right' });
+        doc.y = rowY + 18;
+      }
+
+      // Total
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(0.5);
+      const totalY = doc.y;
+      const totalAmt = `$${Number(payment.amount).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      doc.font('Helvetica-Bold').fontSize(12).text('TOTAL', 50, totalY);
+      doc.text(totalAmt, 50, totalY, { width: 495, align: 'right' });
+      doc.moveDown(1.2);
+
+      // Status
+      const status = statusLabels[payment.status] ?? payment.status;
+      doc.fontSize(11).text(`Estado: ${status}`);
+      if (payment.notes) {
+        doc.moveDown(0.3);
+        doc.font('Helvetica-Oblique').fontSize(9).text(`Notas: ${payment.notes}`);
+      }
+
+      // Footer
+      doc.moveDown(2);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#ccc').stroke();
+      doc.moveDown(0.3);
+      doc.fontSize(8).fillColor('#888').font('Helvetica')
+        .text(`Generado el ${new Date().toLocaleDateString('es-AR')}`, { align: 'center' });
+
+      doc.end();
+    });
   }
 }

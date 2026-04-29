@@ -26,4 +26,6 @@ export const paymentsApi = {
   update: (id: string, data: Partial<CreatePaymentPayload>) =>
     apiClient.patch<Payment>(`/payments/${id}`, data).then(r => r.data),
   delete: (id: string) => apiClient.delete(`/payments/${id}`).then(r => r.data),
+  downloadPdf: (id: string) =>
+    apiClient.get(`/payments/${id}/pdf`, { responseType: 'blob' }).then(r => r.data),
 }

@@ -61,3 +61,19 @@ export function useDeletePayment() {
     },
   })
 }
+
+export function useDownloadPaymentPdf() {
+  return useMutation({
+    mutationFn: async (payment: { id: string; tenantName: string }) => {
+      const blob = await paymentsApi.downloadPdf(payment.id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `comprobante-${payment.tenantName.replace(/\s+/g, '-')}-${payment.id.slice(-6)}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    },
+  })
+}
