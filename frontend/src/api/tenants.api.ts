@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Tenant } from '@/types'
+import type { Tenant, TenantBalance } from '@/types'
 
 export interface CreateTenantPayload {
   firstName: string
@@ -24,4 +24,5 @@ export const tenantsApi = {
   update: (id: string, data: Partial<CreateTenantPayload>) =>
     apiClient.patch<Tenant>(`/tenants/${id}`, data).then(r => r.data),
   delete: (id: string) => apiClient.delete(`/tenants/${id}`).then(r => r.data),
+  getBalance: (id: string) => apiClient.get<TenantBalance>(`/tenants/${id}/balance`).then(r => r.data),
 }

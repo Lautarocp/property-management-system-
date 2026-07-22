@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
-import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment } from '@/hooks/usePayments'
+import { useTranslation } from 'react-i18next'
+import { usePayments, useCreatePayment, useMarkAsPaid, useMarkAsUnpaid, useUpdatePayment, useDeletePayment, useDownloadPaymentPdf } from '@/hooks/usePayments'
+import { useFiltersStore } from '@/store/filters.store'
 import { leasesApi } from '@/api/leases.api'
 import type { CreatePaymentPayload } from '@/api/payments.api'
 
@@ -12,19 +14,12 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-gray-100 text-gray-500',
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  RENT: 'Rent',
-  DEPOSIT: 'Deposit',
-  LATE_FEE: 'Late Fee',
-  MAINTENANCE: 'Maintenance',
-  OTHER: 'Other',
-}
-
 const TYPE_COLORS: Record<string, string> = {
   RENT: 'bg-blue-100 text-blue-700',
   DEPOSIT: 'bg-purple-100 text-purple-700',
   LATE_FEE: 'bg-orange-100 text-orange-700',
   MAINTENANCE: 'bg-red-100 text-red-700',
+  BUILDING_FEE: 'bg-teal-100 text-teal-700',
   OTHER: 'bg-gray-100 text-gray-600',
 }
 
@@ -35,6 +30,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
   onCancel: () => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const { data: leases } = useQuery({
     queryKey: ['leases'],
     queryFn: () => leasesApi.getAll(),
@@ -56,7 +52,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
     const lease = activeLeases.find((l: any) => l.id === leaseId)
     if (lease) {
       let k = keyCounter
-      const baseItem = { key: k++, name: 'Base Rent', amount: String(Number(lease.monthlyRent)) }
+      const baseItem = { key: k++, name: t('common.baseRent'), amount: String(Number(lease.monthlyRent)) }
       const extraItems = (lease.items ?? []).map((li: any) => ({ key: k++, name: li.name, amount: String(Number(li.amount)) }))
       setItems([baseItem, ...extraItems])
       setKeyCounter(k)
@@ -94,35 +90,41 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
     onSubmit(payload)
   }
 
+  const typeLabels: Record<string, string> = {
+    RENT: t('payments.typeRent'),
+    DEPOSIT: t('payments.typeDeposit'),
+    LATE_FEE: t('payments.typeLateFee'),
+    BUILDING_FEE: t('payments.typeBuildingFee'),
+    OTHER: t('payments.typeOther'),
+  }
+
   return (
     <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-5">
-      {/* Lease selector */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Lease (Tenant → Apartment) *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.leaseLabel')}</label>
         <select
           {...register('leaseId', { required: true })}
           onChange={handleLeaseChange}
           className="w-full border rounded-lg px-3 py-2 text-sm"
         >
-          <option value="">Select a lease...</option>
+          <option value="">{t('payments.selectLease')}</option>
           {activeLeases.map((l: any) => (
             <option key={l.id} value={l.id}>
               {l.tenant.firstName} {l.tenant.lastName} → #{l.apartment.number} ({l.apartment.complex?.name}) — ${Number(l.monthlyRent).toLocaleString()}/mo
             </option>
           ))}
         </select>
-        {errors.leaseId && <p className="text-red-500 text-xs mt-1">Required</p>}
+        {errors.leaseId && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
       </div>
 
-      {/* Payment items */}
       <div className="border rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-4 py-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment Breakdown</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('common.paymentBreakdown')}</p>
         </div>
 
         <div className="divide-y divide-gray-100">
           {items.length === 0 && (
-            <p className="px-4 py-3 text-sm text-gray-400 italic">No items yet. Add items below.</p>
+            <p className="px-4 py-3 text-sm text-gray-400 italic">{t('payments.noItemsYet')}</p>
           )}
           {items.map(item => (
             <div key={item.key} className="flex items-center gap-3 px-4 py-2">
@@ -130,7 +132,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
                 type="text"
                 value={item.name}
                 onChange={e => updateItem(item.key, 'name', e.target.value)}
-                placeholder="Item name"
+                placeholder={t('common.itemName')}
                 className="flex-1 border-0 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1"
               />
               <div className="flex items-center gap-1">
@@ -155,14 +157,13 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
           ))}
         </div>
 
-        {/* Add item row */}
         <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-t">
           <input
             type="text"
             value={newName}
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
-            placeholder="Item name (e.g. Parking)"
+            placeholder={t('payments.itemNamePlaceholder')}
             className="flex-1 border rounded px-2 py-1 text-xs"
           />
           <div className="flex items-center gap-1">
@@ -173,7 +174,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
               value={newAmount}
               onChange={e => setNewAmount(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
-              placeholder="Amount (neg. to subtract)"
+              placeholder={t('payments.amountPlaceholder')}
               className="w-36 border rounded px-2 py-1 text-xs"
             />
           </div>
@@ -182,51 +183,48 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
             onClick={addItem}
             className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            + Add
+            {t('common.addItem')}
           </button>
         </div>
 
-        {/* Total */}
         <div className="flex items-center justify-between px-4 py-3 border-t bg-white font-semibold">
-          <span className="text-sm text-gray-700">Total</span>
+          <span className="text-sm text-gray-700">{t('payments.totalLabel')}</span>
           <span className={`text-base ${total < 0 ? 'text-red-600' : 'text-gray-900'}`}>
             ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
       </div>
 
-      {/* Other fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.dueDateLabel')}</label>
           <input
             type="date"
             {...register('dueDate', { required: true })}
             className="w-full border rounded-lg px-3 py-2 text-sm"
           />
-          {errors.dueDate && <p className="text-red-500 text-xs mt-1">Required</p>}
+          {errors.dueDate && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.typeLabel')}</label>
           <select {...register('type')} className="w-full border rounded-lg px-3 py-2 text-sm">
-            <option value="RENT">Rent</option>
-            <option value="DEPOSIT">Deposit</option>
-            <option value="LATE_FEE">Late Fee</option>
-            <option value="OTHER">Other</option>
+            {Object.entries(typeLabels).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </select>
         </div>
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.notesLabel')}</label>
           <input {...register('notes')} className="w-full border rounded-lg px-3 py-2 text-sm" />
         </div>
       </div>
 
       <div className="flex gap-3 justify-end pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-          {isLoading ? 'Saving...' : 'Create Payment'}
+          {isLoading ? t('common.saving') : t('payments.createPayment')}
         </button>
       </div>
     </form>
@@ -234,6 +232,7 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
 }
 
 function EditPaymentModal({ payment, onClose }: { payment: any; onClose: () => void }) {
+  const { t } = useTranslation()
   const updatePayment = useUpdatePayment()
   const { register, handleSubmit } = useForm({
     defaultValues: {
@@ -254,38 +253,38 @@ function EditPaymentModal({ payment, onClose }: { payment: any; onClose: () => v
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold mb-1">Edit Payment</h3>
+        <h3 className="text-lg font-semibold mb-1">{t('payments.editTitle')}</h3>
         <p className="text-sm text-gray-500 mb-4">
           {payment.tenant.firstName} {payment.tenant.lastName} — #{payment.lease.apartment.number}
         </p>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.amountLabel')}</label>
               <input type="number" step="0.01" {...register('amount', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.dueDateLabel')}</label>
               <input type="date" {...register('dueDate', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.typeLabel')}</label>
               <select {...register('type')} className="w-full border rounded-lg px-3 py-2 text-sm">
-                <option value="RENT">Rent</option>
-                <option value="DEPOSIT">Deposit</option>
-                <option value="LATE_FEE">Late Fee</option>
-                <option value="OTHER">Other</option>
+                <option value="RENT">{t('payments.typeRent')}</option>
+                <option value="DEPOSIT">{t('payments.typeDeposit')}</option>
+                <option value="LATE_FEE">{t('payments.typeLateFee')}</option>
+                <option value="OTHER">{t('payments.typeOther')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.notesLabel')}</label>
               <input {...register('notes')} className="w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
           </div>
           <div className="flex gap-3 justify-end pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">{t('common.cancel')}</button>
             <button type="submit" disabled={updatePayment.isPending} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {updatePayment.isPending ? 'Saving...' : 'Save'}
+              {updatePayment.isPending ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </form>
@@ -295,10 +294,13 @@ function EditPaymentModal({ payment, onClose }: { payment: any; onClose: () => v
 }
 
 export function PaymentsPage() {
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING' | 'OVERDUE' | 'PAID'>('ALL')
+  const { t } = useTranslation()
+  const activeFilter = useFiltersStore(s => s.payments.status)
+  const setPaymentsFilter = useFiltersStore(s => s.setPaymentsFilter)
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [selectedItemIds, setSelectedItemIds] = useState<Record<string, string[]>>({})
 
   const { data: payments, isLoading } = usePayments(
     activeFilter === 'ALL' ? undefined : { status: activeFilter }
@@ -307,13 +309,30 @@ export function PaymentsPage() {
   const markAsPaid = useMarkAsPaid()
   const markAsUnpaid = useMarkAsUnpaid()
   const deletePayment = useDeletePayment()
+  const downloadPdf = useDownloadPaymentPdf()
+
+  const typeLabels: Record<string, string> = {
+    RENT: t('payments.typeRent'),
+    DEPOSIT: t('payments.typeDeposit'),
+    LATE_FEE: t('payments.typeLateFee'),
+    MAINTENANCE: t('payments.typeMaintenance'),
+    BUILDING_FEE: t('payments.typeBuildingFee'),
+    OTHER: t('payments.typeOther'),
+  }
+
+  const filterLabels: Record<string, string> = {
+    ALL: t('payments.filterAll'),
+    PENDING: t('payments.filterPending'),
+    OVERDUE: t('payments.filterOverdue'),
+    PAID: t('payments.filterPaid'),
+  }
 
   const handleCreate = (data: CreatePaymentPayload) => {
     createPayment.mutate(data, { onSuccess: () => setShowCreate(false) })
   }
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this payment?')) deletePayment.mutate(id)
+    if (confirm(t('payments.deleteConfirm'))) deletePayment.mutate(id)
   }
 
   return (
@@ -322,20 +341,20 @@ export function PaymentsPage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Payments</h2>
-          <p className="text-gray-500 text-sm mt-1">{payments?.length ?? 0} payments</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('payments.title')}</h2>
+          <p className="text-gray-500 text-sm mt-1">{t('payments.subtitle', { count: payments?.length ?? 0 })}</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
         >
-          + New Payment
+          {t('payments.newPayment')}
         </button>
       </div>
 
       {showCreate && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">New Payment</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('payments.newPaymentTitle')}</h3>
           <CreatePaymentForm
             onSubmit={handleCreate}
             onCancel={() => setShowCreate(false)}
@@ -344,40 +363,39 @@ export function PaymentsPage() {
         </div>
       )}
 
-      {/* Filter tabs */}
       <div className="flex gap-2 mb-6">
         {FILTERS.map(f => (
           <button
             key={f}
-            onClick={() => setActiveFilter(f)}
+            onClick={() => setPaymentsFilter({ status: f })}
             className={`px-4 py-1.5 text-sm rounded-full font-medium transition-colors ${
               activeFilter === f
                 ? f === 'OVERDUE' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {f === 'ALL' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
+            {filterLabels[f]}
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-gray-400">{t('common.loading')}</div>
       ) : !payments?.length ? (
-        <div className="text-center py-16 text-gray-400">No payments found.</div>
+        <div className="text-center py-16 text-gray-400">{t('payments.noPayments')}</div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
-                <th className="px-4 py-3 text-left">Tenant</th>
-                <th className="px-4 py-3 text-left">Apartment</th>
-                <th className="px-4 py-3 text-left">Type</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3 text-left">Due Date</th>
-                <th className="px-4 py-3 text-left">Paid Date</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Actions</th>
+                <th className="px-4 py-3 text-left">{t('payments.colTenant')}</th>
+                <th className="px-4 py-3 text-left">{t('payments.colApartment')}</th>
+                <th className="px-4 py-3 text-left">{t('payments.colType')}</th>
+                <th className="px-4 py-3 text-right">{t('payments.colAmount')}</th>
+                <th className="px-4 py-3 text-left">{t('payments.colDueDate')}</th>
+                <th className="px-4 py-3 text-left">{t('payments.colPaidDate')}</th>
+                <th className="px-4 py-3 text-left">{t('payments.colStatus')}</th>
+                <th className="px-4 py-3 text-left">{t('payments.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -396,7 +414,7 @@ export function PaymentsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[payment.type] ?? 'bg-gray-100 text-gray-600'}`}>
-                        {TYPE_LABELS[payment.type] ?? payment.type}
+                        {typeLabels[payment.type] ?? payment.type}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -404,10 +422,19 @@ export function PaymentsPage() {
                         <span className="font-semibold text-gray-900">${Number(payment.amount).toLocaleString()}</span>
                         {payment.items?.length > 0 && (
                           <button
-                            onClick={() => setExpanded(expanded === payment.id ? null : payment.id)}
+                            onClick={() => {
+                              const isOpening = expanded !== payment.id
+                              setExpanded(isOpening ? payment.id : null)
+                              if (isOpening && !selectedItemIds[payment.id]) {
+                                setSelectedItemIds(prev => ({
+                                  ...prev,
+                                  [payment.id]: payment.items.map((i: any) => i.id),
+                                }))
+                              }
+                            }}
                             className="text-xs text-blue-500 hover:underline mt-0.5"
                           >
-                            {expanded === payment.id ? 'hide' : `${payment.items.length} items`}
+                            {expanded === payment.id ? t('payments.hide') : t('payments.items', { count: payment.items.length })}
                           </button>
                         )}
                       </div>
@@ -420,19 +447,37 @@ export function PaymentsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[payment.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                        {payment.status}
+                        {({ PENDING: t('payments.statusPending'), PAID: t('payments.statusPaid'), OVERDUE: t('payments.statusOverdue'), CANCELLED: t('payments.statusCancelled') } as Record<string, string>)[payment.status] ?? payment.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-3">
                         {(payment.status === 'PENDING' || payment.status === 'OVERDUE') && (
-                          <button
-                            onClick={() => markAsPaid.mutate(payment.id)}
-                            disabled={markAsPaid.isPending}
-                            className="text-xs text-green-600 hover:underline disabled:opacity-50"
-                          >
-                            Mark Paid
-                          </button>
+                          payment.items?.length > 0 ? (
+                            <button
+                              onClick={() => {
+                                const isOpening = expanded !== payment.id
+                                setExpanded(isOpening ? payment.id : null)
+                                if (isOpening && !selectedItemIds[payment.id]) {
+                                  setSelectedItemIds(prev => ({
+                                    ...prev,
+                                    [payment.id]: payment.items.map((i: any) => i.id),
+                                  }))
+                                }
+                              }}
+                              className="text-xs text-green-600 hover:underline"
+                            >
+                              {expanded === payment.id ? t('payments.hide') : t('payments.viewItems')}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => markAsPaid.mutate({ id: payment.id })}
+                              disabled={markAsPaid.isPending}
+                              className="text-xs text-green-600 hover:underline disabled:opacity-50"
+                            >
+                              {t('payments.markPaid')}
+                            </button>
+                          )
                         )}
                         {payment.status === 'PAID' && (
                           <button
@@ -440,42 +485,109 @@ export function PaymentsPage() {
                             disabled={markAsUnpaid.isPending}
                             className="text-xs text-yellow-600 hover:underline disabled:opacity-50"
                           >
-                            Mark Unpaid
+                            {t('payments.markUnpaid')}
                           </button>
                         )}
+
                         <button onClick={() => setEditing(payment)} className="text-xs text-blue-600 hover:underline">
-                          Edit
+                          {t('common.edit')}
+                        </button>
+                        <button
+                          onClick={() => downloadPdf.mutate({ id: payment.id, tenantName: `${payment.tenant.firstName} ${payment.tenant.lastName}` })}
+                          disabled={downloadPdf.isPending}
+                          className="text-xs text-purple-600 hover:underline disabled:opacity-50"
+                        >
+                          {t('payments.downloadPdf')}
                         </button>
                         <button
                           onClick={() => handleDelete(payment.id)}
                           disabled={deletePayment.isPending}
                           className="text-xs text-red-500 hover:underline disabled:opacity-50"
                         >
-                          Delete
+                          {t('common.delete')}
                         </button>
                       </div>
                     </td>
                   </tr>
-                  {expanded === payment.id && payment.items?.length > 0 && (
-                    <tr key={`${payment.id}-items`} className={payment.status === 'OVERDUE' ? 'bg-red-50' : 'bg-gray-50'}>
-                      <td colSpan={8} className="px-8 py-3">
-                        <div className="space-y-1 max-w-xs">
-                          {payment.items.map((item: any) => (
-                            <div key={item.id} className="flex justify-between text-xs text-gray-600">
-                              <span>{item.name}</span>
-                              <span className={Number(item.amount) < 0 ? 'text-red-500' : 'text-gray-800'}>
-                                {Number(item.amount) < 0 ? '-' : '+'}${Math.abs(Number(item.amount)).toLocaleString()}
+                  {expanded === payment.id && payment.items?.length > 0 && (() => {
+                    const isPayable = payment.status === 'PENDING' || payment.status === 'OVERDUE'
+                    const selected = selectedItemIds[payment.id] ?? payment.items.map((i: any) => i.id)
+                    const selectedTotal = payment.items
+                      .filter((i: any) => selected.includes(i.id))
+                      .reduce((sum: number, i: any) => sum + Number(i.amount), 0)
+
+                    const toggleItem = (itemId: string) => {
+                      setSelectedItemIds(prev => {
+                        const cur = prev[payment.id] ?? payment.items.map((i: any) => i.id)
+                        return {
+                          ...prev,
+                          [payment.id]: cur.includes(itemId)
+                            ? cur.filter((id: string) => id !== itemId)
+                            : [...cur, itemId],
+                        }
+                      })
+                    }
+
+                    return (
+                      <tr key={`${payment.id}-items`} className={payment.status === 'OVERDUE' ? 'bg-red-50' : 'bg-blue-50/40'}>
+                        <td colSpan={8} className="px-8 py-3">
+                          <div className="max-w-sm space-y-1">
+                            {payment.items.map((item: any) => (
+                              <div key={item.id} className="flex items-center justify-between gap-3 text-xs text-gray-700">
+                                {isPayable ? (
+                                  <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={selected.includes(item.id)}
+                                      onChange={() => toggleItem(item.id)}
+                                      className="accent-blue-600 w-3.5 h-3.5"
+                                    />
+                                    <span className={!selected.includes(item.id) ? 'text-gray-400 line-through' : ''}>
+                                      {item.name}
+                                    </span>
+                                  </label>
+                                ) : (
+                                  <span className="flex-1">{item.name}</span>
+                                )}
+                                <span className={`font-medium ${!isPayable || selected.includes(item.id) ? 'text-gray-800' : 'text-gray-400'}`}>
+                                  ${Number(item.amount).toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+
+                            <div className="flex items-center justify-between border-t pt-2 mt-2">
+                              <span className="text-xs font-semibold text-gray-700">
+                                {isPayable ? t('payments.selectedTotal') : t('payments.totalLabel')}
+                              </span>
+                              <span className="text-sm font-bold text-gray-900">
+                                ${(isPayable ? selectedTotal : Number(payment.amount)).toLocaleString()}
                               </span>
                             </div>
-                          ))}
-                          <div className="flex justify-between text-xs font-semibold border-t pt-1 mt-1 text-gray-800">
-                            <span>Total</span>
-                            <span>${Number(payment.amount).toLocaleString()}</span>
+
+                            {isPayable && (
+                              <div className="flex items-center gap-3 pt-1">
+                                <button
+                                  onClick={() => markAsPaid.mutate({
+                                    id: payment.id,
+                                    paidItemIds: selected.length < payment.items.length ? selected : undefined,
+                                  })}
+                                  disabled={markAsPaid.isPending || selected.length === 0}
+                                  className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-40 font-medium"
+                                >
+                                  {t('payments.chargeSelected', { amount: selectedTotal.toLocaleString() })}
+                                </button>
+                                {selected.length < payment.items.length && (
+                                  <span className="text-xs text-amber-600 italic">
+                                    {t('payments.pendingItemsNote')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+                        </td>
+                      </tr>
+                    )
+                  })()}
                 </>
               ))}
             </tbody>

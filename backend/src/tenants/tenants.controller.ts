@@ -5,13 +5,17 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { LedgerService } from '@/ledger/ledger.service';
 
 @ApiTags('tenants')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('tenants')
 export class TenantsController {
-  constructor(private readonly service: TenantsService) {}
+  constructor(
+    private readonly service: TenantsService,
+    private readonly ledger: LedgerService,
+  ) {}
 
   @Get()
   findAll() {
@@ -21,6 +25,11 @@ export class TenantsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
+  }
+
+  @Get(':id/balance')
+  getBalance(@Param('id') id: string) {
+    return this.ledger.getTenantBalance(id);
   }
 
   @Post()

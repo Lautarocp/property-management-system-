@@ -4,6 +4,7 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: pms_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: pms_db
       POSTGRES_USER: pms_user
@@ -25,6 +26,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: pms_backend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -36,21 +38,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend/src:/app/src
     networks:
       - pms_network
-    command: npm run start:dev
+
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: pms_frontend
+    restart: unless-stopped
     ports:
       - "5173:5173"
     environment:
-      VITE_API_URL: http://100.114.72.114:3000/api
+      VITE_API_URL: http://192.168.2.170:3000/api
     depends_on:
       - backend
     volumes:

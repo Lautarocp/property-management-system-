@@ -9,6 +9,7 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     strictPort: false,
+    allowedHosts: ['len0vo.tail88a61c.ts.net'],
   },
   resolve: {
     alias: {

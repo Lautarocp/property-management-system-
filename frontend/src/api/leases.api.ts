@@ -8,6 +8,7 @@ export interface CreateLeasePayload {
   endDate: string
   monthlyRent: number
   depositAmount: number
+  buildingFeeAmount?: number
   notes?: string
 }
 
@@ -17,6 +18,7 @@ export interface TransferLeasePayload {
   endDate: string
   monthlyRent: number
   depositAmount: number
+  buildingFeeAmount?: number
 }
 
 export interface LeaseItemPayload {

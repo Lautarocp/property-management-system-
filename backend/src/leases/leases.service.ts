@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { LedgerService } from '@/ledger/ledger.service';
 import { CreateLeaseDto } from './dto/create-lease.dto';
 import { TransferLeaseDto } from './dto/transfer-lease.dto';
 import { CreateLeaseItemDto } from './dto/create-lease-item.dto';
 
 @Injectable()
 export class LeasesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private ledger: LedgerService,
+  ) {}
 
   findAll(apartmentId?: string) {
     return this.prisma.lease.findMany({
@@ -77,6 +81,21 @@ export class LeasesService {
       }),
     ]);
 
+    if (dto.depositAmount > 0) {
+      await this.ledger.writeEntry({
+        type: 'CHARGE',
+        category: 'DEPOSIT',
+        direction: 'DEBIT',
+        amount: dto.depositAmount,
+        description: 'Security deposit charge',
+        referenceId: lease.id,
+        referenceType: 'Lease',
+        tenantId: dto.tenantId,
+        leaseId: lease.id,
+        apartmentId: dto.apartmentId,
+      });
+    }
+
     return lease;
   }
 
@@ -113,6 +132,24 @@ export class LeasesService {
     }
 
     const [updated] = await this.prisma.$transaction(ops);
+
+    if (deductFromDeposit && pendingCharges.length > 0) {
+      for (const charge of pendingCharges) {
+        await this.ledger.writeEntry({
+          type: 'PAYMENT',
+          category: 'DEPOSIT',
+          direction: 'CREDIT',
+          amount: Number(charge.amount),
+          description: 'Deposit applied to pending charges on lease termination',
+          referenceId: charge.id,
+          referenceType: 'Payment',
+          tenantId: lease.tenantId,
+          leaseId: id,
+          apartmentId: lease.apartmentId,
+        });
+      }
+    }
+
     return updated;
   }
 

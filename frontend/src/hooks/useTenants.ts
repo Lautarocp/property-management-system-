@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tenantsApi, type CreateTenantPayload } from '@/api/tenants.api'
 
+export function useTenantBalance(id: string) {
+  return useQuery({
+    queryKey: ['tenant-balance', id],
+    queryFn: () => tenantsApi.getBalance(id),
+    enabled: !!id,
+  })
+}
+
 export function useTenants() {
   return useQuery({ queryKey: ['tenants'], queryFn: tenantsApi.getAll })
 }

@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { LedgerService } from '@/ledger/ledger.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private ledger: LedgerService,
+  ) {}
 
   async getStats() {
     // Mark overdue payments before counting
@@ -40,5 +44,9 @@ export class DashboardService {
       pendingPayments,
       overduePayments,
     };
+  }
+
+  async getFinancialSummary() {
+    return this.ledger.getFinancialSummary();
   }
 }

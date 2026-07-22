@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsDateString, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class TransferLeaseDto {
@@ -27,4 +27,11 @@ export class TransferLeaseDto {
   @IsNumber()
   @Min(0)
   depositAmount!: number;
+
+  @ApiPropertyOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  buildingFeeAmount?: number;
 }
