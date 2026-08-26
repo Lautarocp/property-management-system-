@@ -22,11 +22,12 @@ export class CreateApartmentDto {
   @IsOptional()
   area?: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  monthlyRent!: number;
+  @IsOptional()
+  monthlyRent?: number;
 
   @ApiPropertyOptional({ enum: ApartmentStatus })
   @IsEnum(ApartmentStatus)

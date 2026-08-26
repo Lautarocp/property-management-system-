@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
@@ -52,6 +52,9 @@ export class ApartmentsService {
 
   async increaseRent(id: string, percentage: number) {
     const apartment = await this.findOne(id);
+    if (apartment.monthlyRent === null) {
+      throw new BadRequestException('Apartment has no rent set yet — assign a tenant first or set an initial rent');
+    }
     const currentRent = Number(apartment.monthlyRent);
     const newRent = Math.round(currentRent * (1 + percentage / 100) * 100) / 100;
 

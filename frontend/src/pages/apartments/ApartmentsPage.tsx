@@ -50,7 +50,7 @@ function ApartmentForm({ defaultValues, onSubmit, onCancel, isLoading }: {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.monthlyRentLabel')}</label>
-          <input type="number" min={0} step="0.01" {...register('monthlyRent', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <input type="number" min={0} step="0.01" placeholder={t('apartments.monthlyRentNotSet')} {...register('monthlyRent', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.statusLabel')}</label>
@@ -190,7 +190,7 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
                 <option value="">{t('apartments.selectApartment')}</option>
                 {available.map(a => (
                   <option key={a.id} value={a.id}>
-                    #{a.number} — {t('common.floor')} {a.floor} — {a.complex?.name} (${a.monthlyRent.toLocaleString()}/mo)
+                    #{a.number} — {t('common.floor')} {a.floor} — {a.complex?.name}{a.monthlyRent != null ? ` ($${Number(a.monthlyRent).toLocaleString()}/mo)` : ''}
                   </option>
                 ))}
               </select>
@@ -498,7 +498,9 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-xs text-gray-400">{t('apartments.baseRent')}</p>
-                <p className="text-sm font-semibold text-gray-800">${Number(apartment.monthlyRent).toLocaleString()}</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {apartment.monthlyRent != null ? `$${Number(apartment.monthlyRent).toLocaleString()}` : <span className="text-gray-400 italic font-normal">{t('apartments.monthlyRentNotSet')}</span>}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-gray-400">{t('apartments.areaLabel2')}</p>
@@ -516,13 +518,18 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
           <section>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{t('apartments.rentAdjustment')}</h4>
-              <button
-                onClick={() => { setShowRentIncrease(!showRentIncrease); setRentPct('') }}
-                className="text-xs text-indigo-600 hover:underline"
-              >
-                {showRentIncrease ? t('apartments.adjustCancel') : t('apartments.adjustBtn')}
-              </button>
+              {apartment.monthlyRent != null && (
+                <button
+                  onClick={() => { setShowRentIncrease(!showRentIncrease); setRentPct('') }}
+                  className="text-xs text-indigo-600 hover:underline"
+                >
+                  {showRentIncrease ? t('apartments.adjustCancel') : t('apartments.adjustBtn')}
+                </button>
+              )}
             </div>
+            {apartment.monthlyRent == null && (
+              <p className="text-xs text-gray-400 italic">{t('apartments.rentAdjustmentUnavailable')}</p>
+            )}
             {showRentIncrease && (
               <div className="flex items-center gap-2">
                 <input
@@ -794,7 +801,7 @@ export function ApartmentsPage() {
               number: editing.number,
               floor: editing.floor,
               area: editing.area,
-              monthlyRent: Number(editing.monthlyRent),
+              monthlyRent: editing.monthlyRent != null ? Number(editing.monthlyRent) : undefined,
               status: editing.status,
               complexId: editing.complexId,
             } : undefined}
@@ -834,7 +841,9 @@ export function ApartmentsPage() {
                     <td className="px-4 py-3 font-medium">#{apt.number} — {t('common.floor')} {apt.floor}</td>
                     <td className="px-4 py-3 text-gray-500">{apt.complex?.name ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-500">{apt.area ? `${apt.area} m²` : '—'}</td>
-                    <td className="px-4 py-3 font-medium">${apt.monthlyRent.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-medium">
+                      {apt.monthlyRent != null ? `$${Number(apt.monthlyRent).toLocaleString()}` : <span className="text-gray-400 font-normal italic">{t('apartments.monthlyRentNotSet')}</span>}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status as Apartment['status']]}`}>
                         {t(`apartments.status${apt.status.charAt(0) + apt.status.slice(1).toLowerCase()}`)}

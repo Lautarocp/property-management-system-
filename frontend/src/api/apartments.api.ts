@@ -5,7 +5,7 @@ export interface CreateApartmentPayload {
   number: string
   floor?: number
   area?: number
-  monthlyRent: number
+  monthlyRent?: number
   status?: Apartment['status']
   complexId: string
 }

@@ -29,7 +29,7 @@ export interface Apartment {
   number: string
   floor?: number
   area?: number
-  monthlyRent: number
+  monthlyRent?: number | null
   status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'INACTIVE'
   description?: string
   complexId: string

@@ -133,7 +133,7 @@ model Apartment {
   number       String
   floor        Int?
   area         Float?
-  monthlyRent  Decimal         @db.Decimal(10, 2)
+  monthlyRent  Decimal?        @db.Decimal(10, 2)
   status       ApartmentStatus @default(AVAILABLE)
   description  String?
   createdAt    DateTime        @default(now())
