@@ -1,7 +1,8 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, IsEnum, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, IsEnum, ValidateNested, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { CreatePaymentItemDto } from './create-payment-item.dto';
+import { PaymentMethod } from '@prisma/client';
 
 export enum PaymentTypeEnum {
   RENT = 'RENT',
@@ -35,6 +36,18 @@ export class CreatePaymentDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({ enum: PaymentMethod })
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  paymentMethod?: PaymentMethod;
+
+  @ApiPropertyOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  feeAmount?: number;
 
   @ApiPropertyOptional({ type: [CreatePaymentItemDto] })
   @IsOptional()

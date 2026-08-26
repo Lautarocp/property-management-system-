@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { MarkAsPaidDto } from './dto/mark-as-paid.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 @ApiTags('payments')
@@ -44,8 +45,8 @@ export class PaymentsController {
   }
 
   @Patch(':id/pay')
-  markAsPaid(@Param('id') id: string, @Body() body: { paidItemIds?: string[] }) {
-    return this.service.markAsPaid(id, body?.paidItemIds);
+  markAsPaid(@Param('id') id: string, @Body() body: MarkAsPaidDto) {
+    return this.service.markAsPaid(id, body?.paidItemIds, body?.paymentMethod, body?.feeAmount);
   }
 
   @Patch(':id/unpay')

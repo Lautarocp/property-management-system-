@@ -5,7 +5,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { LedgerService } from '@/ledger/ledger.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { PaymentType, LedgerEntryCategory, Prisma } from '@prisma/client';
+import { PaymentType, PaymentMethod, LedgerEntryCategory, Prisma } from '@prisma/client';
 
 const PAYMENT_INCLUDE = {
   items: { orderBy: { createdAt: 'asc' as const } },
@@ -124,7 +124,7 @@ export class PaymentsService {
     return payment;
   }
 
-  async markAsPaid(id: string, paidItemIds?: string[]) {
+  async markAsPaid(id: string, paidItemIds?: string[], paymentMethod?: PaymentMethod, feeAmount?: number) {
     const payment = await this.findOne(id);
     const items = payment.items as PaymentItemRow[];
 
@@ -165,14 +165,14 @@ export class PaymentsService {
 
       return this.prisma.payment.update({
         where: { id },
-        data: { status: 'PAID', paidDate: new Date() },
+        data: { status: 'PAID', paidDate: new Date(), paymentMethod, feeAmount },
       });
     }
 
     // Full payment — existing behavior
     const updated = await this.prisma.payment.update({
       where: { id },
-      data: { status: 'PAID', paidDate: new Date() },
+      data: { status: 'PAID', paidDate: new Date(), paymentMethod, feeAmount },
     });
 
     if (Number(payment.amount) > 0) {
@@ -227,6 +227,8 @@ export class PaymentsService {
         ...(dto.dueDate !== undefined && { dueDate: new Date(dto.dueDate) }),
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.paymentMethod !== undefined && { paymentMethod: dto.paymentMethod }),
+        ...(dto.feeAmount !== undefined && { feeAmount: dto.feeAmount }),
       },
     });
   }
@@ -248,6 +250,9 @@ export class PaymentsService {
     };
     const statusLabels: Record<string, string> = {
       PENDING: 'PENDIENTE', PAID: 'PAGADO', OVERDUE: 'VENCIDO', CANCELLED: 'CANCELADO',
+    };
+    const methodLabels: Record<string, string> = {
+      CASH: 'Efectivo', BANK_TRANSFER: 'Transferencia Bancaria', MERCADO_PAGO: 'Mercado Pago',
     };
 
     const items: { name: string; amount: number }[] = payment.items?.length
@@ -325,6 +330,14 @@ export class PaymentsService {
       // Status
       const status = statusLabels[payment.status] ?? payment.status;
       doc.fontSize(11).text(`Estado: ${status}`);
+      if ((payment as any).paymentMethod) {
+        const method = methodLabels[(payment as any).paymentMethod] ?? (payment as any).paymentMethod;
+        doc.text(`Forma de pago: ${method}`);
+        if ((payment as any).feeAmount) {
+          const fee = Number((payment as any).feeAmount).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          doc.text(`Retención: $${fee}`);
+        }
+      }
       if (payment.notes) {
         doc.moveDown(0.3);
         doc.font('Helvetica-Oblique').fontSize(9).text(`Notas: ${payment.notes}`);

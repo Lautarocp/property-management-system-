@@ -214,6 +214,13 @@ const es = {
     statusOverdue: 'Vencido',
     statusCancelled: 'Cancelado',
     downloadPdf: 'PDF',
+    confirmPaymentTitle: 'Confirmar Pago',
+    confirmPayment: 'Confirmar Pago',
+    paymentMethodLabel: 'Forma de Pago',
+    methodCash: 'Efectivo',
+    methodBankTransfer: 'Transferencia Bancaria',
+    methodMercadoPago: 'Mercado Pago',
+    feeAmountLabel: 'Retención Mercado Pago',
   },
   maintenance: {
     title: 'Mantenimiento',

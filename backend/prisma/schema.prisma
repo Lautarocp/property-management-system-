@@ -88,6 +88,12 @@ enum LedgerEntryDirection {
   CREDIT
 }
 
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  MERCADO_PAGO
+}
+
 model User {
   id          String   @id @default(cuid())
   email       String   @unique
@@ -211,6 +217,8 @@ model Payment {
   paidDate    DateTime?
   status      PaymentStatus @default(PENDING)
   type        PaymentType   @default(RENT)
+  paymentMethod PaymentMethod?
+  feeAmount   Decimal?      @db.Decimal(10, 2)
   notes       String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

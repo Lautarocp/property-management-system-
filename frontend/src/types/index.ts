@@ -79,6 +79,8 @@ export interface Payment {
   paidDate?: string
   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
   type: 'RENT' | 'DEPOSIT' | 'LATE_FEE' | 'MAINTENANCE' | 'OTHER'
+  paymentMethod?: 'CASH' | 'BANK_TRANSFER' | 'MERCADO_PAGO'
+  feeAmount?: number
   notes?: string
   leaseId: string
   tenantId: string

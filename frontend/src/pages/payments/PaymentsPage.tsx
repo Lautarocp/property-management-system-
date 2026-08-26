@@ -231,6 +231,81 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
   )
 }
 
+function MarkAsPaidModal({ payment, paidItemIds, amount, onClose }: {
+  payment: any
+  paidItemIds?: string[]
+  amount: number
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const markAsPaid = useMarkAsPaid()
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'BANK_TRANSFER' | 'MERCADO_PAGO'>('CASH')
+  const [feeAmount, setFeeAmount] = useState('')
+
+  const handleConfirm = () => {
+    markAsPaid.mutate(
+      {
+        id: payment.id,
+        paidItemIds,
+        paymentMethod,
+        feeAmount: paymentMethod === 'MERCADO_PAGO' && feeAmount ? Number(feeAmount) : undefined,
+      },
+      { onSuccess: onClose }
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <h3 className="text-lg font-semibold mb-1">{t('payments.confirmPaymentTitle')}</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          {payment.tenant.firstName} {payment.tenant.lastName} — ${amount.toLocaleString()}
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.paymentMethodLabel')}</label>
+            <select
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value as 'CASH' | 'BANK_TRANSFER' | 'MERCADO_PAGO')}
+              className="w-full border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="CASH">{t('payments.methodCash')}</option>
+              <option value="BANK_TRANSFER">{t('payments.methodBankTransfer')}</option>
+              <option value="MERCADO_PAGO">{t('payments.methodMercadoPago')}</option>
+            </select>
+          </div>
+          {paymentMethod === 'MERCADO_PAGO' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.feeAmountLabel')}</label>
+              <input
+                type="number"
+                step="0.01"
+                value={feeAmount}
+                onChange={e => setFeeAmount(e.target.value)}
+                placeholder="0"
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3 justify-end pt-5">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={markAsPaid.isPending}
+            className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {markAsPaid.isPending ? t('common.saving') : t('payments.confirmPayment')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function EditPaymentModal({ payment, onClose }: { payment: any; onClose: () => void }) {
   const { t } = useTranslation()
   const updatePayment = useUpdatePayment()
@@ -299,6 +374,7 @@ export function PaymentsPage() {
   const setPaymentsFilter = useFiltersStore(s => s.setPaymentsFilter)
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
+  const [payingPayment, setPayingPayment] = useState<{ payment: any; paidItemIds?: string[]; amount: number } | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [selectedItemIds, setSelectedItemIds] = useState<Record<string, string[]>>({})
 
@@ -306,7 +382,6 @@ export function PaymentsPage() {
     activeFilter === 'ALL' ? undefined : { status: activeFilter }
   )
   const createPayment = useCreatePayment()
-  const markAsPaid = useMarkAsPaid()
   const markAsUnpaid = useMarkAsUnpaid()
   const deletePayment = useDeletePayment()
   const downloadPdf = useDownloadPaymentPdf()
@@ -318,6 +393,12 @@ export function PaymentsPage() {
     MAINTENANCE: t('payments.typeMaintenance'),
     BUILDING_FEE: t('payments.typeBuildingFee'),
     OTHER: t('payments.typeOther'),
+  }
+
+  const methodLabels: Record<string, string> = {
+    CASH: t('payments.methodCash'),
+    BANK_TRANSFER: t('payments.methodBankTransfer'),
+    MERCADO_PAGO: t('payments.methodMercadoPago'),
   }
 
   const filterLabels: Record<string, string> = {
@@ -338,6 +419,14 @@ export function PaymentsPage() {
   return (
     <div className="p-8">
       {editing && <EditPaymentModal payment={editing} onClose={() => setEditing(null)} />}
+      {payingPayment && (
+        <MarkAsPaidModal
+          payment={payingPayment.payment}
+          paidItemIds={payingPayment.paidItemIds}
+          amount={payingPayment.amount}
+          onClose={() => setPayingPayment(null)}
+        />
+      )}
 
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -444,6 +533,12 @@ export function PaymentsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-500">
                       {payment.paidDate ? new Date(payment.paidDate).toLocaleDateString() : '—'}
+                      {payment.paymentMethod && (
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {methodLabels[payment.paymentMethod] ?? payment.paymentMethod}
+                          {payment.feeAmount ? ` (-$${Number(payment.feeAmount).toLocaleString()})` : ''}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[payment.status] ?? 'bg-gray-100 text-gray-500'}`}>
@@ -471,8 +566,7 @@ export function PaymentsPage() {
                             </button>
                           ) : (
                             <button
-                              onClick={() => markAsPaid.mutate({ id: payment.id })}
-                              disabled={markAsPaid.isPending}
+                              onClick={() => setPayingPayment({ payment, amount: Number(payment.amount) })}
                               className="text-xs text-green-600 hover:underline disabled:opacity-50"
                             >
                               {t('payments.markPaid')}
@@ -567,11 +661,12 @@ export function PaymentsPage() {
                             {isPayable && (
                               <div className="flex items-center gap-3 pt-1">
                                 <button
-                                  onClick={() => markAsPaid.mutate({
-                                    id: payment.id,
+                                  onClick={() => setPayingPayment({
+                                    payment,
                                     paidItemIds: selected.length < payment.items.length ? selected : undefined,
+                                    amount: selectedTotal,
                                   })}
-                                  disabled={markAsPaid.isPending || selected.length === 0}
+                                  disabled={selected.length === 0}
                                   className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-40 font-medium"
                                 >
                                   {t('payments.chargeSelected', { amount: selectedTotal.toLocaleString() })}

@@ -214,6 +214,13 @@ const en = {
     statusOverdue: 'Overdue',
     statusCancelled: 'Cancelled',
     downloadPdf: 'PDF',
+    confirmPaymentTitle: 'Confirm Payment',
+    confirmPayment: 'Confirm Payment',
+    paymentMethodLabel: 'Payment Method',
+    methodCash: 'Cash',
+    methodBankTransfer: 'Bank Transfer',
+    methodMercadoPago: 'Mercado Pago',
+    feeAmountLabel: 'Mercado Pago Fee',
   },
   maintenance: {
     title: 'Maintenance',
