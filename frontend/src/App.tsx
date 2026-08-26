@@ -16,6 +16,14 @@ import { ReportsPage } from '@/pages/reports/ReportsPage'
 
 const queryClient = new QueryClient()
 
+function DevWatermark() {
+  return (
+    <div className="fixed bottom-0 inset-x-0 z-50 bg-amber-500 text-amber-950 text-xs font-semibold text-center py-1 tracking-wide pointer-events-none select-none">
+      RAMA DEV
+    </div>
+  )
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -43,6 +51,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+      <DevWatermark />
     </QueryClientProvider>
   )
 }
