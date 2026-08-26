@@ -8,6 +8,15 @@ import { UpdateTenantDto } from './dto/update-tenant.dto';
 export class TenantsService {
   constructor(private prisma: PrismaService) {}
 
+  private titleCase(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .split(/(\s+)/)
+      .map((part) => (/\s+/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+      .join('');
+  }
+
   findAll() {
     return this.prisma.tenant.findMany({
       where: { isActive: true },
@@ -46,6 +55,10 @@ export class TenantsService {
       return await this.prisma.tenant.create({
         data: {
           ...dto,
+          firstName: this.titleCase(dto.firstName),
+          lastName: this.titleCase(dto.lastName),
+          guarantorFirstName: dto.guarantorFirstName ? this.titleCase(dto.guarantorFirstName) : dto.guarantorFirstName,
+          guarantorLastName: dto.guarantorLastName ? this.titleCase(dto.guarantorLastName) : dto.guarantorLastName,
           birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
           createdById: userId,
         },
@@ -64,6 +77,10 @@ export class TenantsService {
       where: { id },
       data: {
         ...dto,
+        ...(dto.firstName !== undefined && { firstName: this.titleCase(dto.firstName) }),
+        ...(dto.lastName !== undefined && { lastName: this.titleCase(dto.lastName) }),
+        ...(dto.guarantorFirstName !== undefined && { guarantorFirstName: this.titleCase(dto.guarantorFirstName) }),
+        ...(dto.guarantorLastName !== undefined && { guarantorLastName: this.titleCase(dto.guarantorLastName) }),
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
       },
     });
