@@ -1,9 +1,11 @@
 import axios from 'axios'
 
+const apiPort = import.meta.env.VITE_API_PORT || '3000'
+
 const apiClient = axios.create({
   baseURL: window.location.hostname.includes('.ts.net')
     ? `https://${window.location.hostname}:8443/api`
-    : `http://${window.location.hostname}:3000/api`,
+    : `http://${window.location.hostname}:${apiPort}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
