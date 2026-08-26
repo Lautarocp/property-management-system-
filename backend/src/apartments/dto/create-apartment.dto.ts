@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ApartmentStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
@@ -14,20 +14,6 @@ export class CreateApartmentDto {
   @IsNumber()
   @IsOptional()
   floor?: number;
-
-  @ApiPropertyOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  area?: number;
-
-  @ApiPropertyOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  monthlyRent?: number;
 
   @ApiPropertyOptional({ enum: ApartmentStatus })
   @IsEnum(ApartmentStatus)

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
@@ -48,32 +48,6 @@ export class ApartmentsService {
   async update(id: string, dto: UpdateApartmentDto) {
     await this.findOne(id);
     return this.prisma.apartment.update({ where: { id }, data: dto });
-  }
-
-  async increaseRent(id: string, percentage: number) {
-    const apartment = await this.findOne(id);
-    if (apartment.monthlyRent === null) {
-      throw new BadRequestException('Apartment has no rent set yet — assign a tenant first or set an initial rent');
-    }
-    const currentRent = Number(apartment.monthlyRent);
-    const newRent = Math.round(currentRent * (1 + percentage / 100) * 100) / 100;
-
-    const activeLease = apartment.leases?.[0];
-
-    const [updatedApartment] = await this.prisma.$transaction([
-      this.prisma.apartment.update({
-        where: { id },
-        data: { monthlyRent: newRent },
-      }),
-      ...(activeLease
-        ? [this.prisma.lease.update({
-            where: { id: activeLease.id },
-            data: { monthlyRent: newRent },
-          })]
-        : []),
-    ]);
-
-    return { apartment: updatedApartment, previousRent: currentRent, newRent };
   }
 
   async remove(id: string) {

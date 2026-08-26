@@ -3,7 +3,6 @@ import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ApartmentsService } from './apartments.service';
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
-import { IncreaseRentDto } from './dto/increase-rent.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 @ApiTags('apartments')
@@ -32,11 +31,6 @@ export class ApartmentsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateApartmentDto) {
     return this.service.update(id, dto);
-  }
-
-  @Patch(':id/increase-rent')
-  increaseRent(@Param('id') id: string, @Body() dto: IncreaseRentDto) {
-    return this.service.increaseRent(id, dto.percentage);
   }
 
   @Delete(':id')

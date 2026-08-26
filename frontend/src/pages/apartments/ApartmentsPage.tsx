@@ -7,7 +7,6 @@ import { useApartments, useCreateApartment, useUpdateApartment, useDeleteApartme
 import { useComplexes } from '@/hooks/useComplexes'
 import { useTenants } from '@/hooks/useTenants'
 import { useCreateLease, useTerminateLease, useTransferLease } from '@/hooks/useLeases'
-import { useIncreaseRent } from '@/hooks/useApartments'
 import { useMaintenance } from '@/hooks/useMaintenance'
 import { useCreatePayment } from '@/hooks/usePayments'
 import { leasesApi } from '@/api/leases.api'
@@ -45,14 +44,6 @@ function ApartmentForm({ defaultValues, onSubmit, onCancel, isLoading }: {
           <input type="number" {...register('floor', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.areaLabel')}</label>
-          <input type="number" min={0} step="0.01" {...register('area', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.monthlyRentLabel')}</label>
-          <input type="number" min={0} step="0.01" placeholder={t('apartments.monthlyRentNotSet')} {...register('monthlyRent', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.statusLabel')}</label>
           <select {...register('status')} className="w-full border rounded-lg px-3 py-2 text-sm">
             <option value="AVAILABLE">{t('apartments.statusAvailable')}</option>
@@ -85,7 +76,7 @@ function AssignTenantModal({ apartment, onClose }: { apartment: any; onClose: ()
   const { data: tenants } = useTenants()
   const createLease = useCreateLease()
   const { register, handleSubmit, formState: { errors } } = useForm<CreateLeasePayload>({
-    defaultValues: { apartmentId: apartment.id, monthlyRent: apartment.monthlyRent },
+    defaultValues: { apartmentId: apartment.id },
   })
 
   const onSubmit = (data: CreateLeasePayload) => {
@@ -164,9 +155,7 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
     a => a.status === 'AVAILABLE' && a.id !== apartment.id
   )
 
-  const { register, handleSubmit, formState: { errors } } = useForm<TransferLeasePayload>({
-    defaultValues: { monthlyRent: apartment.monthlyRent },
-  })
+  const { register, handleSubmit, formState: { errors } } = useForm<TransferLeasePayload>()
 
   const onSubmit = (data: TransferLeasePayload) => {
     transferLease.mutate({ id: activeLease.id, data }, { onSuccess: onClose })
@@ -190,7 +179,7 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
                 <option value="">{t('apartments.selectApartment')}</option>
                 {available.map(a => (
                   <option key={a.id} value={a.id}>
-                    #{a.number} — {t('common.floor')} {a.floor} — {a.complex?.name}{a.monthlyRent != null ? ` ($${Number(a.monthlyRent).toLocaleString()}/mo)` : ''}
+                    #{a.number} — {t('common.floor')} {a.floor} — {a.complex?.name}
                   </option>
                 ))}
               </select>
@@ -469,9 +458,6 @@ function MaintenanceHistoryModal({ apartment, onClose }: { apartment: any; onClo
 
 function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose: () => void }) {
   const { t } = useTranslation()
-  const increaseRent = useIncreaseRent()
-  const [showRentIncrease, setShowRentIncrease] = useState(false)
-  const [rentPct, setRentPct] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const [showNewPayment, setShowNewPayment] = useState(false)
 
@@ -495,72 +481,12 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
         <div className="p-6 space-y-6">
           <section>
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('apartments.detailsSection')}</h4>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs text-gray-400">{t('apartments.baseRent')}</p>
-                <p className="text-sm font-semibold text-gray-800">
-                  {apartment.monthlyRent != null ? `$${Number(apartment.monthlyRent).toLocaleString()}` : <span className="text-gray-400 italic font-normal">{t('apartments.monthlyRentNotSet')}</span>}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">{t('apartments.areaLabel2')}</p>
-                <p className="text-sm font-medium text-gray-800">{apartment.area ? `${apartment.area} m²` : '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">{t('apartments.statusLabel2')}</p>
-                <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[apartment.status as Apartment['status']]}`}>
-                  {t(`apartments.status${apartment.status.charAt(0) + apartment.status.slice(1).toLowerCase()}`)}
-                </span>
-              </div>
+            <div>
+              <p className="text-xs text-gray-400">{t('apartments.statusLabel2')}</p>
+              <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[apartment.status as Apartment['status']]}`}>
+                {t(`apartments.status${apartment.status.charAt(0) + apartment.status.slice(1).toLowerCase()}`)}
+              </span>
             </div>
-          </section>
-
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{t('apartments.rentAdjustment')}</h4>
-              {apartment.monthlyRent != null && (
-                <button
-                  onClick={() => { setShowRentIncrease(!showRentIncrease); setRentPct('') }}
-                  className="text-xs text-indigo-600 hover:underline"
-                >
-                  {showRentIncrease ? t('apartments.adjustCancel') : t('apartments.adjustBtn')}
-                </button>
-              )}
-            </div>
-            {apartment.monthlyRent == null && (
-              <p className="text-xs text-gray-400 italic">{t('apartments.rentAdjustmentUnavailable')}</p>
-            )}
-            {showRentIncrease && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder={t('apartments.rentAdjustPlaceholder')}
-                  value={rentPct}
-                  onChange={(e: { target: { value: string } }) => setRentPct(e.target.value)}
-                  className="flex-1 border rounded-lg px-2 py-1 text-sm"
-                />
-                <button
-                  onClick={() => {
-                    const pct = Number(rentPct)
-                    if (!pct) return
-                    increaseRent.mutate(
-                      { id: apartment.id, percentage: pct },
-                      { onSuccess: () => { setShowRentIncrease(false); setRentPct('') } }
-                    )
-                  }}
-                  disabled={increaseRent.isPending || !rentPct}
-                  className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {increaseRent.isPending ? '...' : t('apartments.applyBtn')}
-                </button>
-              </div>
-            )}
-            {showRentIncrease && rentPct && (
-              <p className="text-xs text-gray-500 mt-1">
-                ${Number(apartment.monthlyRent).toLocaleString()} → ${(Number(apartment.monthlyRent) * (1 + Number(rentPct) / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              </p>
-            )}
           </section>
 
           {activeLease ? (
@@ -800,8 +726,6 @@ export function ApartmentsPage() {
             defaultValues={editing ? {
               number: editing.number,
               floor: editing.floor,
-              area: editing.area,
-              monthlyRent: editing.monthlyRent != null ? Number(editing.monthlyRent) : undefined,
               status: editing.status,
               complexId: editing.complexId,
             } : undefined}
@@ -825,8 +749,6 @@ export function ApartmentsPage() {
               <tr>
                 <th className="px-4 py-3 text-left">{t('apartments.colUnit')}</th>
                 <th className="px-4 py-3 text-left">{t('apartments.colComplex')}</th>
-                <th className="px-4 py-3 text-left">{t('apartments.colArea')}</th>
-                <th className="px-4 py-3 text-left">{t('apartments.colRent')}</th>
                 <th className="px-4 py-3 text-left">{t('apartments.colStatus')}</th>
                 <th className="px-4 py-3 text-left">{t('apartments.colTenant')}</th>
                 <th className="px-4 py-3 text-left">{t('apartments.colActions')}</th>
@@ -840,10 +762,6 @@ export function ApartmentsPage() {
                   <tr key={apt.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">#{apt.number} — {t('common.floor')} {apt.floor}</td>
                     <td className="px-4 py-3 text-gray-500">{apt.complex?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{apt.area ? `${apt.area} m²` : '—'}</td>
-                    <td className="px-4 py-3 font-medium">
-                      {apt.monthlyRent != null ? `$${Number(apt.monthlyRent).toLocaleString()}` : <span className="text-gray-400 font-normal italic">{t('apartments.monthlyRentNotSet')}</span>}
-                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status as Apartment['status']]}`}>
                         {t(`apartments.status${apt.status.charAt(0) + apt.status.slice(1).toLowerCase()}`)}
