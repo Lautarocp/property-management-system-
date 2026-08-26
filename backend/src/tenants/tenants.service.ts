@@ -9,6 +9,7 @@ export class TenantsService {
   constructor(private prisma: PrismaService) {}
 
   private titleCase(value: string): string {
+    if (!value) return value;
     return value
       .trim()
       .toLowerCase()
@@ -77,10 +78,10 @@ export class TenantsService {
       where: { id },
       data: {
         ...dto,
-        ...(dto.firstName !== undefined && { firstName: this.titleCase(dto.firstName) }),
-        ...(dto.lastName !== undefined && { lastName: this.titleCase(dto.lastName) }),
-        ...(dto.guarantorFirstName !== undefined && { guarantorFirstName: this.titleCase(dto.guarantorFirstName) }),
-        ...(dto.guarantorLastName !== undefined && { guarantorLastName: this.titleCase(dto.guarantorLastName) }),
+        ...(dto.firstName && { firstName: this.titleCase(dto.firstName) }),
+        ...(dto.lastName && { lastName: this.titleCase(dto.lastName) }),
+        ...(dto.guarantorFirstName !== undefined && { guarantorFirstName: dto.guarantorFirstName ? this.titleCase(dto.guarantorFirstName) : dto.guarantorFirstName }),
+        ...(dto.guarantorLastName !== undefined && { guarantorLastName: dto.guarantorLastName ? this.titleCase(dto.guarantorLastName) : dto.guarantorLastName }),
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
       },
     });
