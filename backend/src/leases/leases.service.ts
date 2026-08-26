@@ -59,6 +59,8 @@ export class LeasesService {
     });
     if (existing) throw new BadRequestException('Apartment already has an active lease');
 
+    const depositAmount = dto.depositAmount ?? 0;
+
     const [lease] = await this.prisma.$transaction([
       this.prisma.lease.create({
         data: {
@@ -67,7 +69,7 @@ export class LeasesService {
           startDate: new Date(dto.startDate),
           endDate: new Date(dto.endDate),
           monthlyRent: dto.monthlyRent,
-          depositAmount: dto.depositAmount,
+          depositAmount,
           notes: dto.notes,
           status: 'ACTIVE',
         },
@@ -81,12 +83,12 @@ export class LeasesService {
       }),
     ]);
 
-    if (dto.depositAmount > 0) {
+    if (depositAmount > 0) {
       await this.ledger.writeEntry({
         type: 'CHARGE',
         category: 'DEPOSIT',
         direction: 'DEBIT',
-        amount: dto.depositAmount,
+        amount: depositAmount,
         description: 'Security deposit charge',
         referenceId: lease.id,
         referenceType: 'Lease',
@@ -180,7 +182,7 @@ export class LeasesService {
           startDate: new Date(dto.startDate),
           endDate: new Date(dto.endDate),
           monthlyRent: dto.monthlyRent,
-          depositAmount: dto.depositAmount,
+          depositAmount: dto.depositAmount ?? 0,
           status: 'ACTIVE',
         },
         include: {

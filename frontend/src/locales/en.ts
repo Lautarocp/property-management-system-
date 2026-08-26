@@ -121,7 +121,7 @@ const en = {
     startDate: 'Start Date *',
     endDate: 'End Date *',
     monthlyRentField: 'Monthly Rent *',
-    depositLabel: 'Deposit *',
+    depositLabel: 'Deposit',
     assigning: 'Assigning...',
     assignButton: 'Assign',
     moving: 'Moving...',

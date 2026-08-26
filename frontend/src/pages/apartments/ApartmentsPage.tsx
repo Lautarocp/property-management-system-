@@ -115,7 +115,7 @@ function AssignTenantModal({ apartment, onClose }: { apartment: any; onClose: ()
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.depositLabel')}</label>
-              <input type="number" min={0} step="0.01" {...register('depositAmount', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+              <input type="number" min={0} step="0.01" {...register('depositAmount', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
           </div>
           <div>
@@ -202,7 +202,7 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.depositLabel')}</label>
-                <input type="number" min={0} step="0.01" {...register('depositAmount', { required: true, valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                <input type="number" min={0} step="0.01" {...register('depositAmount', { valueAsNumber: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div>

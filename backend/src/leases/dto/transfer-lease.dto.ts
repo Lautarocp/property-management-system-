@@ -22,11 +22,12 @@ export class TransferLeaseDto {
   @Min(0)
   monthlyRent!: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  depositAmount!: number;
+  @IsOptional()
+  depositAmount?: number;
 
   @ApiPropertyOptional()
   @Type(() => Number)
