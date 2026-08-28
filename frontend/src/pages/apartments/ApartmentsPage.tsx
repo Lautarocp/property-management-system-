@@ -703,7 +703,7 @@ export function ApartmentsPage() {
         </select>
 
         <div className="flex gap-2">
-          {(['', 'AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'INACTIVE'] as const).map(s => (
+          {(['', 'AVAILABLE', 'OCCUPIED'] as const).map(s => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
