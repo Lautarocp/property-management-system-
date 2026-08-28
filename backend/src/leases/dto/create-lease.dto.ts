@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, IsDateString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateLeaseDto {
   @ApiProperty()
@@ -18,6 +18,7 @@ export class CreateLeaseDto {
   startDate!: string;
 
   @ApiPropertyOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsDateString()
   @IsOptional()
   endDate?: string;
