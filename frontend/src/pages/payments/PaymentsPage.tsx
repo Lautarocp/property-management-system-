@@ -25,45 +25,35 @@ const TYPE_COLORS: Record<string, string> = {
 
 const FILTERS = ['ALL', 'PENDING', 'OVERDUE', 'PAID'] as const
 
-function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
+function CreatePaymentForm({ lease, onSubmit, onCancel, onChangeLease, isLoading }: {
+  lease: any
   onSubmit: (data: CreatePaymentPayload) => void
   onCancel: () => void
+  onChangeLease: () => void
   isLoading: boolean
 }) {
   const { t } = useTranslation()
-  const { data: leases } = useQuery({
-    queryKey: ['leases'],
-    queryFn: () => leasesApi.getAll(),
-  })
-  const activeLeases = (leases as any[])?.filter(l => l.status === 'ACTIVE') ?? []
+  const { register, handleSubmit, formState: { errors } } = useForm<{ dueDate: string; type: string; notes: string }>()
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<{ leaseId: string; dueDate: string; type: string; notes: string }>()
+  const initialItems = (() => {
+    let k = 0
+    const baseItem = { key: k++, name: t('common.baseRent'), amount: String(Number(lease.monthlyRent)), checked: true }
+    const extraItems = (lease.items ?? []).map((li: any) => ({ key: k++, name: li.name, amount: String(Number(li.amount)), checked: true }))
+    const extraLabels = [t('common.electricity'), t('common.gas'), t('common.buildingFeeItem')]
+    const extraDefaults = extraLabels.map(name => ({ key: k++, name, amount: '', checked: false }))
+    return [baseItem, ...extraItems, ...extraDefaults]
+  })()
 
-  const [items, setItems] = useState<{ key: number; name: string; amount: string }[]>([])
+  const [items, setItems] = useState<{ key: number; name: string; amount: string; checked: boolean }[]>(initialItems)
   const [newName, setNewName] = useState('')
   const [newAmount, setNewAmount] = useState('')
-  const [keyCounter, setKeyCounter] = useState(0)
+  const [keyCounter, setKeyCounter] = useState(initialItems.length)
 
-  const total = items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
-
-  const handleLeaseChange = (e: { target: { value: string } }) => {
-    const leaseId = e.target.value
-    setValue('leaseId', leaseId)
-    const lease = activeLeases.find((l: any) => l.id === leaseId)
-    if (lease) {
-      let k = keyCounter
-      const baseItem = { key: k++, name: t('common.baseRent'), amount: String(Number(lease.monthlyRent)) }
-      const extraItems = (lease.items ?? []).map((li: any) => ({ key: k++, name: li.name, amount: String(Number(li.amount)) }))
-      setItems([baseItem, ...extraItems])
-      setKeyCounter(k)
-    } else {
-      setItems([])
-    }
-  }
+  const total = items.reduce((sum, i) => sum + (i.checked ? (Number(i.amount) || 0) : 0), 0)
 
   const addItem = () => {
     if (!newName.trim() || !newAmount) return
-    setItems(prev => [...prev, { key: keyCounter, name: newName.trim(), amount: newAmount }])
+    setItems(prev => [...prev, { key: keyCounter, name: newName.trim(), amount: newAmount, checked: true }])
     setKeyCounter(k => k + 1)
     setNewName('')
     setNewAmount('')
@@ -71,17 +61,22 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
 
   const removeItem = (key: number) => setItems(prev => prev.filter(i => i.key !== key))
 
+  const toggleItem = (key: number) => {
+    setItems(prev => prev.map(i => i.key === key ? { ...i, checked: !i.checked } : i))
+  }
+
   const updateItem = (key: number, field: 'name' | 'amount', value: string) => {
     setItems(prev => prev.map(i => i.key === key ? { ...i, [field]: value } : i))
   }
 
   const handleSubmitForm = (formData: any) => {
+    const checkedItems = items.filter(i => i.checked)
     const payload: CreatePaymentPayload = {
-      leaseId: formData.leaseId,
+      leaseId: lease.id,
       dueDate: formData.dueDate,
       type: formData.type || 'RENT',
       notes: formData.notes || undefined,
-      items: items.map(i => ({ name: i.name, amount: Number(i.amount) })),
+      items: checkedItems.map(i => ({ name: i.name, amount: Number(i.amount) })),
     }
     if (!payload.items?.length) {
       payload.amount = 0
@@ -100,21 +95,17 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
 
   return (
     <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-5">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('payments.leaseLabel')}</label>
-        <select
-          {...register('leaseId', { required: true })}
-          onChange={handleLeaseChange}
-          className="w-full border rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="">{t('payments.selectLease')}</option>
-          {activeLeases.map((l: any) => (
-            <option key={l.id} value={l.id}>
-              {l.tenant.firstName} {l.tenant.lastName} → #{l.apartment.number} ({l.apartment.complex?.name}) — ${Number(l.monthlyRent).toLocaleString()}/mo
-            </option>
-          ))}
-        </select>
-        {errors.leaseId && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
+      <div className="flex items-center justify-between bg-gray-50 border rounded-lg px-4 py-3">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">{t('payments.leaseLabel')}</p>
+          <p className="text-sm font-semibold text-gray-900">
+            {lease.tenant.firstName} {lease.tenant.lastName} → #{lease.apartment.number}
+            <span className="text-gray-400 font-normal ml-1">({lease.apartment.complex?.name}) — ${Number(lease.monthlyRent).toLocaleString()}/mes</span>
+          </p>
+        </div>
+        <button type="button" onClick={onChangeLease} className="text-xs text-blue-600 hover:underline shrink-0">
+          {t('payments.changeLease')}
+        </button>
       </div>
 
       <div className="border rounded-lg overflow-hidden">
@@ -129,11 +120,18 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
           {items.map(item => (
             <div key={item.key} className="flex items-center gap-3 px-4 py-2">
               <input
+                type="checkbox"
+                checked={item.checked}
+                onChange={() => toggleItem(item.key)}
+                className="accent-blue-600 w-3.5 h-3.5 shrink-0"
+              />
+              <input
                 type="text"
                 value={item.name}
                 onChange={e => updateItem(item.key, 'name', e.target.value)}
                 placeholder={t('common.itemName')}
-                className="flex-1 border-0 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1"
+                disabled={!item.checked}
+                className="flex-1 border-0 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 disabled:text-gray-400"
               />
               <div className="flex items-center gap-1">
                 <span className="text-gray-400 text-sm">$</span>
@@ -143,7 +141,8 @@ function CreatePaymentForm({ onSubmit, onCancel, isLoading }: {
                   value={item.amount}
                   onChange={e => updateItem(item.key, 'amount', e.target.value)}
                   placeholder="0"
-                  className="w-24 border-0 bg-transparent text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1"
+                  disabled={!item.checked}
+                  className="w-24 border-0 bg-transparent text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 disabled:text-gray-400"
                 />
               </div>
               <button
@@ -372,7 +371,7 @@ export function PaymentsPage() {
   const { t } = useTranslation()
   const activeFilter = useFiltersStore(s => s.payments.status)
   const setPaymentsFilter = useFiltersStore(s => s.setPaymentsFilter)
-  const [showCreate, setShowCreate] = useState(false)
+  const [selectedLease, setSelectedLease] = useState<any | null>(null)
   const [editing, setEditing] = useState<any | null>(null)
   const [payingPayment, setPayingPayment] = useState<{ payment: any; paidItemIds?: string[]; amount: number } | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -381,6 +380,11 @@ export function PaymentsPage() {
   const { data: payments, isLoading } = usePayments(
     activeFilter === 'ALL' ? undefined : { status: activeFilter }
   )
+  const { data: leases } = useQuery({
+    queryKey: ['leases'],
+    queryFn: () => leasesApi.getAll(),
+  })
+  const activeLeases = (leases as any[])?.filter(l => l.status === 'ACTIVE') ?? []
   const createPayment = useCreatePayment()
   const markAsUnpaid = useMarkAsUnpaid()
   const deletePayment = useDeletePayment()
@@ -409,7 +413,7 @@ export function PaymentsPage() {
   }
 
   const handleCreate = (data: CreatePaymentPayload) => {
-    createPayment.mutate(data, { onSuccess: () => setShowCreate(false) })
+    createPayment.mutate(data, { onSuccess: () => setSelectedLease(null) })
   }
 
   const handleDelete = (id: string) => {
@@ -428,25 +432,46 @@ export function PaymentsPage() {
         />
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('payments.title')}</h2>
-          <p className="text-gray-500 text-sm mt-1">{t('payments.subtitle', { count: payments?.length ?? 0 })}</p>
-        </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-        >
-          {t('payments.newPayment')}
-        </button>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">{t('payments.title')}</h2>
+        <p className="text-gray-500 text-sm mt-1">{t('payments.subtitle', { count: payments?.length ?? 0 })}</p>
       </div>
 
-      {showCreate && (
+      {!selectedLease ? (
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">{t('payments.selectTenantTitle')}</h3>
+          {activeLeases.length === 0 ? (
+            <p className="text-sm text-gray-400 italic">{t('payments.noActiveLeases')}</p>
+          ) : (
+            <div className="border rounded-lg overflow-hidden divide-y divide-gray-100">
+              {activeLeases.map((l: any) => (
+                <div key={l.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{l.tenant.firstName} {l.tenant.lastName}</p>
+                    <p className="text-xs text-gray-500">
+                      #{l.apartment.number} — {l.apartment.complex?.name} · ${Number(l.monthlyRent).toLocaleString()}/mes
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLease(l)}
+                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    {t('payments.createPayment')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <h3 className="text-lg font-semibold mb-4">{t('payments.newPaymentTitle')}</h3>
           <CreatePaymentForm
+            lease={selectedLease}
             onSubmit={handleCreate}
-            onCancel={() => setShowCreate(false)}
+            onCancel={() => setSelectedLease(null)}
+            onChangeLease={() => setSelectedLease(null)}
             isLoading={createPayment.isPending}
           />
         </div>
