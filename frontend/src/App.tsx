@@ -8,6 +8,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { ComplexesPage } from '@/pages/complexes/ComplexesPage'
 import { ApartmentsPage } from '@/pages/apartments/ApartmentsPage'
 import { TenantsPage } from '@/pages/tenants/TenantsPage'
+import { TenantDetailPage } from '@/pages/tenants/TenantDetailPage'
 import { PaymentsPage } from '@/pages/payments/PaymentsPage'
 import { MaintenancePage } from '@/pages/maintenance/MaintenancePage'
 import { ExpensesPage } from '@/pages/expenses/ExpensesPage'
@@ -42,6 +43,7 @@ function App() {
             <Route path="/complexes" element={<ComplexesPage />} />
             <Route path="/apartments" element={<ApartmentsPage />} />
             <Route path="/tenants" element={<TenantsPage />} />
+            <Route path="/tenants/:id" element={<TenantDetailPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/maintenance" element={<MaintenancePage />} />
             <Route path="/expenses" element={<ExpensesPage />} />

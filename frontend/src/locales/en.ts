@@ -261,6 +261,8 @@ const en = {
     addTenant: '+ Add Tenant',
     editTenant: 'Edit Tenant',
     newTenant: 'New Tenant',
+    backToList: 'Back to tenants',
+    notFound: 'Tenant not found.',
     noTenants: 'No tenants yet. Add your first one!',
     noMatch: 'No tenants match the selected filter.',
     deleteConfirm: 'Delete this tenant?',

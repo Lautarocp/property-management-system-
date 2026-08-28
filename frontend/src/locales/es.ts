@@ -261,6 +261,8 @@ const es = {
     addTenant: '+ Agregar Inquilino',
     editTenant: 'Editar Inquilino',
     newTenant: 'Nuevo Inquilino',
+    backToList: 'Volver a inquilinos',
+    notFound: 'Inquilino no encontrado.',
     noTenants: 'Sin inquilinos aún. ¡Agregue el primero!',
     noMatch: 'Ningún inquilino coincide con el filtro seleccionado.',
     deleteConfirm: '¿Eliminar este inquilino?',
