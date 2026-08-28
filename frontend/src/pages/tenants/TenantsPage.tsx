@@ -14,6 +14,7 @@ export function TenantsPage() {
 
   const [showCreate, setShowCreate] = useState(false)
   const [filterComplex, setFilterComplex] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
 
   const complexOptions = (tenants as any[] ?? []).reduce((acc: any[], t: any) => {
     const complex = t.leases?.[0]?.apartment?.complex
@@ -27,7 +28,15 @@ export function TenantsPage() {
   })
 
   const handleCreate = (data: CreateTenantPayload) => {
-    createTenant.mutate(data, { onSuccess: () => setShowCreate(false) })
+    setEmailError(null)
+    createTenant.mutate(data, {
+      onSuccess: () => setShowCreate(false),
+      onError: (error: any) => {
+        if (error?.response?.status === 409) {
+          setEmailError(t('tenants.emailAlreadyExists'))
+        }
+      },
+    })
   }
 
   const handleDelete = (e: { stopPropagation: () => void }, id: string) => {
@@ -65,8 +74,9 @@ export function TenantsPage() {
           <h3 className="text-lg font-semibold mb-4">{t('tenants.newTenant')}</h3>
           <TenantForm
             onSubmit={handleCreate}
-            onCancel={() => setShowCreate(false)}
+            onCancel={() => { setShowCreate(false); setEmailError(null) }}
             isLoading={createTenant.isPending}
+            emailError={emailError}
           />
         </div>
       )}

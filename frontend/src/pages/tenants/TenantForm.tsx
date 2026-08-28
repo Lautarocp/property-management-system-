@@ -1,16 +1,24 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type { CreateTenantPayload } from '@/api/tenants.api'
 
-export function TenantForm({ defaultValues, onSubmit, onCancel, isLoading }: {
+export function TenantForm({ defaultValues, onSubmit, onCancel, isLoading, emailError }: {
   defaultValues?: Partial<CreateTenantPayload>
   onSubmit: (data: CreateTenantPayload) => void
   onCancel: () => void
   isLoading: boolean
+  emailError?: string | null
 }) {
   const { t } = useTranslation()
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<CreateTenantPayload>({ defaultValues })
+  const { register, handleSubmit, watch, setError, clearErrors, formState: { errors } } = useForm<CreateTenantPayload>({ defaultValues })
   const hasGuarantor = watch('hasGuarantor')
+
+  useEffect(() => {
+    if (emailError) setError('email', { type: 'server', message: emailError })
+  }, [emailError, setError])
+
+  const emailField = register('email', { required: true })
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -26,8 +34,17 @@ export function TenantForm({ defaultValues, onSubmit, onCancel, isLoading }: {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.emailLabel')}</label>
-          <input type="email" {...register('email', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-          {errors.email && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
+          <input
+            type="email"
+            {...emailField}
+            onChange={e => { emailField.onChange(e); if (errors.email?.type === 'server') clearErrors('email') }}
+            className="w-full border rounded-lg px-3 py-2 text-sm"
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors.email.type === 'server' ? errors.email.message : t('common.required')}
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.phoneLabel2')}</label>
@@ -39,7 +56,8 @@ export function TenantForm({ defaultValues, onSubmit, onCancel, isLoading }: {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.birthDateLabel2')}</label>
-          <input type="date" {...register('birthDate')} className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <input type="date" {...register('birthDate', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+          {errors.birthDate && <p className="text-red-500 text-xs mt-1">{t('common.required')}</p>}
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.notesLabel')}</label>
