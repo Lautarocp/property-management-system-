@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsEmail, IsOptional, IsDateString, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsOptional, IsDateString, IsBoolean, ValidateIf } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTenantDto {
@@ -62,7 +62,7 @@ export class CreateTenantDto {
   guarantorPhone?: string;
 
   @ApiPropertyOptional()
+  @ValidateIf((o) => !!o.guarantorEmail)
   @IsEmail()
-  @IsOptional()
   guarantorEmail?: string;
 }
