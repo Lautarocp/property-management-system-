@@ -202,7 +202,7 @@ export function TenantDetailPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">{t('tenants.endDate')}</p>
-                    <p className="text-sm font-medium text-gray-800">{new Date(activeLease.endDate).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-gray-800">{activeLease.endDate ? new Date(activeLease.endDate).toLocaleDateString() : '—'}</p>
                   </div>
                 </div>
                 {activeLease.notes && (
@@ -229,7 +229,7 @@ export function TenantDetailPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 text-xs">
-                        {new Date(lease.startDate).toLocaleDateString()} – {new Date(lease.endDate).toLocaleDateString()}
+                        {new Date(lease.startDate).toLocaleDateString()} – {lease.endDate ? new Date(lease.endDate).toLocaleDateString() : '—'}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LEASE_STATUS_COLORS[lease.status] ?? 'bg-gray-100 text-gray-500'}`}>
                         {lease.status}

@@ -119,7 +119,7 @@ const en = {
     tenantLabel: 'Tenant *',
     selectTenant: 'Select tenant...',
     startDate: 'Start Date *',
-    endDate: 'End Date *',
+    endDate: 'End Date',
     monthlyRentField: 'Monthly Rent *',
     depositLabel: 'Deposit',
     assigning: 'Assigning...',

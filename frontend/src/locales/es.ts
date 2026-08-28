@@ -119,7 +119,7 @@ const es = {
     tenantLabel: 'Inquilino *',
     selectTenant: 'Seleccionar inquilino...',
     startDate: 'Fecha de Inicio *',
-    endDate: 'Fecha de Fin *',
+    endDate: 'Fecha de Fin',
     monthlyRentField: 'Alquiler Mensual *',
     depositLabel: 'Depósito',
     assigning: 'Asignando...',

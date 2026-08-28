@@ -178,7 +178,7 @@ model Tenant {
 model Lease {
   id            String      @id @default(cuid())
   startDate     DateTime
-  endDate       DateTime
+  endDate       DateTime?
   monthlyRent      Decimal     @db.Decimal(10, 2)
   depositAmount    Decimal     @db.Decimal(10, 2)
   buildingFeeAmount Decimal?   @db.Decimal(10, 2)

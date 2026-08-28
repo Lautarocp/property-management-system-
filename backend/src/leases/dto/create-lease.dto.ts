@@ -17,9 +17,10 @@ export class CreateLeaseDto {
   @IsDateString()
   startDate!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsDateString()
-  endDate!: string;
+  @IsOptional()
+  endDate?: string;
 
   @ApiProperty()
   @Type(() => Number)

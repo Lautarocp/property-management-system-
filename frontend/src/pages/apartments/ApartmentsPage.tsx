@@ -105,7 +105,7 @@ function AssignTenantModal({ apartment, onClose }: { apartment: any; onClose: ()
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.endDate')}</label>
-              <input type="date" {...register('endDate', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+              <input type="date" {...register('endDate')} className="w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -192,7 +192,7 @@ function MoveTenantModal({ apartment, allApartments, onClose }: {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('apartments.endDate')}</label>
-                <input type="date" {...register('endDate', { required: true })} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                <input type="date" {...register('endDate')} className="w-full border rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -514,7 +514,7 @@ function ApartmentDetailPanel({ apartment, onClose }: { apartment: any; onClose:
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">{t('tenants.endDate')}</p>
-                    <p className="text-gray-800">{new Date(activeLease.endDate).toLocaleDateString()}</p>
+                    <p className="text-gray-800">{activeLease.endDate ? new Date(activeLease.endDate).toLocaleDateString() : '—'}</p>
                   </div>
                 </div>
                 {activeLease.buildingFeeAmount && Number(activeLease.buildingFeeAmount) > 0 && (

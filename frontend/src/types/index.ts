@@ -59,7 +59,7 @@ export interface Tenant {
 export interface Lease {
   id: string
   startDate: string
-  endDate: string
+  endDate?: string | null
   monthlyRent: number
   depositAmount: number
   status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING'

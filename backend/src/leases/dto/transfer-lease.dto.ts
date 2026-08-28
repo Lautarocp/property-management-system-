@@ -12,9 +12,10 @@ export class TransferLeaseDto {
   @IsDateString()
   startDate!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsDateString()
-  endDate!: string;
+  @IsOptional()
+  endDate?: string;
 
   @ApiProperty()
   @Type(() => Number)
