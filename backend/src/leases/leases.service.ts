@@ -53,7 +53,15 @@ export class LeasesService {
     await this.prisma.leaseItem.delete({ where: { id: itemId } });
   }
 
+  private validateDateRange(startDate: string, endDate?: string) {
+    if (endDate && new Date(endDate) <= new Date(startDate)) {
+      throw new BadRequestException('endDate must be after startDate');
+    }
+  }
+
   async create(dto: CreateLeaseDto) {
+    this.validateDateRange(dto.startDate, dto.endDate);
+
     const existing = await this.prisma.lease.findFirst({
       where: { apartmentId: dto.apartmentId, status: 'ACTIVE' },
     });
@@ -156,6 +164,8 @@ export class LeasesService {
   }
 
   async transfer(id: string, dto: TransferLeaseDto) {
+    this.validateDateRange(dto.startDate, dto.endDate);
+
     const currentLease = await this.findOne(id);
     if (currentLease.status !== 'ACTIVE') {
       throw new BadRequestException('Only active leases can be transferred');
@@ -174,6 +184,8 @@ export class LeasesService {
     });
     if (existingLease) throw new BadRequestException('Target apartment already has an active lease');
 
+    const depositAmount = dto.depositAmount ?? 0;
+
     const [newLease] = await this.prisma.$transaction([
       this.prisma.lease.create({
         data: {
@@ -182,7 +194,8 @@ export class LeasesService {
           startDate: new Date(dto.startDate),
           endDate: dto.endDate ? new Date(dto.endDate) : null,
           monthlyRent: dto.monthlyRent,
-          depositAmount: dto.depositAmount ?? 0,
+          depositAmount,
+          buildingFeeAmount: dto.buildingFeeAmount,
           status: 'ACTIVE',
         },
         include: {
@@ -194,6 +207,21 @@ export class LeasesService {
       this.prisma.lease.update({ where: { id }, data: { status: 'TERMINATED' } }),
       this.prisma.apartment.update({ where: { id: currentLease.apartmentId }, data: { status: 'AVAILABLE' } }),
     ]);
+
+    if (depositAmount > 0) {
+      await this.ledger.writeEntry({
+        type: 'CHARGE',
+        category: 'DEPOSIT',
+        direction: 'DEBIT',
+        amount: depositAmount,
+        description: 'Security deposit charge (lease transfer)',
+        referenceId: newLease.id,
+        referenceType: 'Lease',
+        tenantId: currentLease.tenantId,
+        leaseId: newLease.id,
+        apartmentId: dto.newApartmentId,
+      });
+    }
 
     return newLease;
   }

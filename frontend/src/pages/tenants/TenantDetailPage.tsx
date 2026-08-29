@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useUpdateTenant, useDeleteTenant, useTenantBalance } from '@/hooks/useTenants'
-import { usePayments, useMarkAsPaid, useMarkAsUnpaid } from '@/hooks/usePayments'
+import { usePayments, useMarkAsUnpaid } from '@/hooks/usePayments'
 import { tenantsApi } from '@/api/tenants.api'
 import { TenantForm } from './TenantForm'
+import { MarkAsPaidModal } from '@/components/shared/MarkAsPaidModal'
 import type { CreateTenantPayload } from '@/api/tenants.api'
 
 const PAYMENT_STATUS_COLORS: Record<string, string> = {
@@ -27,6 +28,7 @@ export function TenantDetailPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
+  const [payingPayment, setPayingPayment] = useState<{ payment: any; amount: number } | null>(null)
 
   const { data: tenant, isLoading } = useQuery({
     queryKey: ['tenant', id],
@@ -37,7 +39,6 @@ export function TenantDetailPage() {
   const { data: balance } = useTenantBalance(id!)
   const updateTenant = useUpdateTenant()
   const deleteTenant = useDeleteTenant()
-  const markAsPaid = useMarkAsPaid()
   const markAsUnpaid = useMarkAsUnpaid()
 
   const activeLease = (tenant as any)?.leases?.find((l: any) => l.status === 'ACTIVE')
@@ -70,6 +71,13 @@ export function TenantDetailPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
+      {payingPayment && (
+        <MarkAsPaidModal
+          payment={payingPayment.payment}
+          amount={payingPayment.amount}
+          onClose={() => setPayingPayment(null)}
+        />
+      )}
       <Link to="/tenants" className="text-sm text-indigo-600 hover:underline">← {t('tenants.backToList')}</Link>
 
       <div className="flex items-center justify-between mt-3 mb-6">
@@ -290,7 +298,7 @@ export function TenantDetailPage() {
                       </span>
                       {(p.status === 'PENDING' || p.status === 'OVERDUE') && (
                         <button
-                          onClick={() => markAsPaid.mutate({ id: p.id })}
+                          onClick={() => setPayingPayment({ payment: p, amount: Number(p.amount) })}
                           className="text-xs text-green-600 hover:underline"
                         >
                           {t('tenants.markPaid')}

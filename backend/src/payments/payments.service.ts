@@ -197,7 +197,7 @@ export class PaymentsService {
     const payment = await this.findOne(id);
     const updated = await this.prisma.payment.update({
       where: { id },
-      data: { status: 'PENDING', paidDate: null },
+      data: { status: 'PENDING', paidDate: null, paymentMethod: null, feeAmount: null },
     });
 
     if (Number(payment.amount) > 0) {
@@ -333,7 +333,7 @@ export class PaymentsService {
       if ((payment as any).paymentMethod) {
         const method = methodLabels[(payment as any).paymentMethod] ?? (payment as any).paymentMethod;
         doc.text(`Forma de pago: ${method}`);
-        if ((payment as any).feeAmount) {
+        if ((payment as any).feeAmount != null) {
           const fee = Number((payment as any).feeAmount).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           doc.text(`Retención: $${fee}`);
         }
