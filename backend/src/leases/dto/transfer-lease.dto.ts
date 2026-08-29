@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, IsDateString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class TransferLeaseDto {
   @ApiProperty()
@@ -12,9 +12,11 @@ export class TransferLeaseDto {
   @IsDateString()
   startDate!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsDateString()
-  endDate!: string;
+  @IsOptional()
+  endDate?: string;
 
   @ApiProperty()
   @Type(() => Number)
@@ -22,11 +24,12 @@ export class TransferLeaseDto {
   @Min(0)
   monthlyRent!: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  depositAmount!: number;
+  @IsOptional()
+  depositAmount?: number;
 
   @ApiPropertyOptional()
   @Type(() => Number)

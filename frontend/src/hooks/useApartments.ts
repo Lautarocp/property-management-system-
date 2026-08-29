@@ -33,11 +33,3 @@ export function useDeleteApartment() {
   })
 }
 
-export function useIncreaseRent() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, percentage }: { id: string; percentage: number }) =>
-      apartmentsApi.increaseRent(id, percentage),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['apartments'] }),
-  })
-}

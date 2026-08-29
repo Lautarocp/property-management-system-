@@ -88,6 +88,12 @@ enum LedgerEntryDirection {
   CREDIT
 }
 
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  MERCADO_PAGO
+}
+
 model User {
   id          String   @id @default(cuid())
   email       String   @unique
@@ -126,8 +132,6 @@ model Apartment {
   id           String          @id @default(cuid())
   number       String
   floor        Int?
-  area         Float?
-  monthlyRent  Decimal         @db.Decimal(10, 2)
   status       ApartmentStatus @default(AVAILABLE)
   description  String?
   createdAt    DateTime        @default(now())
@@ -174,7 +178,7 @@ model Tenant {
 model Lease {
   id            String      @id @default(cuid())
   startDate     DateTime
-  endDate       DateTime
+  endDate       DateTime?
   monthlyRent      Decimal     @db.Decimal(10, 2)
   depositAmount    Decimal     @db.Decimal(10, 2)
   buildingFeeAmount Decimal?   @db.Decimal(10, 2)
@@ -211,6 +215,8 @@ model Payment {
   paidDate    DateTime?
   status      PaymentStatus @default(PENDING)
   type        PaymentType   @default(RENT)
+  paymentMethod PaymentMethod?
+  feeAmount   Decimal?      @db.Decimal(10, 2)
   notes       String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

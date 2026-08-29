@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { paymentsApi, type CreatePaymentPayload } from '@/api/payments.api'
+import { paymentsApi, type CreatePaymentPayload, type MarkAsPaidPayload } from '@/api/payments.api'
 
 export function usePayments(params?: { leaseId?: string; tenantId?: string; status?: string }) {
   return useQuery({
@@ -22,8 +22,8 @@ export function useCreatePayment() {
 export function useMarkAsPaid() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, paidItemIds }: { id: string; paidItemIds?: string[] }) =>
-      paymentsApi.markAsPaid(id, paidItemIds),
+    mutationFn: ({ id, ...data }: { id: string } & MarkAsPaidPayload) =>
+      paymentsApi.markAsPaid(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payments'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })

@@ -28,8 +28,6 @@ export interface Apartment {
   id: string
   number: string
   floor?: number
-  area?: number
-  monthlyRent: number
   status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'INACTIVE'
   description?: string
   complexId: string
@@ -61,7 +59,7 @@ export interface Tenant {
 export interface Lease {
   id: string
   startDate: string
-  endDate: string
+  endDate?: string | null
   monthlyRent: number
   depositAmount: number
   status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING'
@@ -79,6 +77,8 @@ export interface Payment {
   paidDate?: string
   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
   type: 'RENT' | 'DEPOSIT' | 'LATE_FEE' | 'MAINTENANCE' | 'OTHER'
+  paymentMethod?: 'CASH' | 'BANK_TRANSFER' | 'MERCADO_PAGO'
+  feeAmount?: number
   notes?: string
   leaseId: string
   tenantId: string

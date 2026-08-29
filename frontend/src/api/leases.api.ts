@@ -5,9 +5,9 @@ export interface CreateLeasePayload {
   apartmentId: string
   tenantId: string
   startDate: string
-  endDate: string
+  endDate?: string
   monthlyRent: number
-  depositAmount: number
+  depositAmount?: number
   buildingFeeAmount?: number
   notes?: string
 }
@@ -15,9 +15,9 @@ export interface CreateLeasePayload {
 export interface TransferLeasePayload {
   newApartmentId: string
   startDate: string
-  endDate: string
+  endDate?: string
   monthlyRent: number
-  depositAmount: number
+  depositAmount?: number
   buildingFeeAmount?: number
 }
 

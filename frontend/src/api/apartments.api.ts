@@ -4,8 +4,6 @@ import type { Apartment } from '@/types'
 export interface CreateApartmentPayload {
   number: string
   floor?: number
-  area?: number
-  monthlyRent: number
   status?: Apartment['status']
   complexId: string
 }
@@ -18,6 +16,4 @@ export const apartmentsApi = {
   update: (id: string, data: Partial<CreateApartmentPayload>) =>
     apiClient.patch<Apartment>(`/apartments/${id}`, data).then(r => r.data),
   delete: (id: string) => apiClient.delete(`/apartments/${id}`).then(r => r.data),
-  increaseRent: (id: string, percentage: number) =>
-    apiClient.patch(`/apartments/${id}/increase-rent`, { percentage }).then(r => r.data),
 }
